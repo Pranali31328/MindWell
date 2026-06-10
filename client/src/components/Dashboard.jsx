@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import * as Lucide from 'lucide-react';
 import { analyticsAPI, wellnessAPI } from '../api.js';
@@ -63,17 +63,17 @@ export default function Dashboard({ user, onNavigate }) {
   const [showMoodSaved, setShowMoodSaved] = useState(false);
   const [exportToast, setExportToast] = useState(null);
 
-  const loadWellness = () => {
+  const loadWellness = useCallback(() => {
     wellnessAPI.getStreak(user.id).then(d => setStreak(d.streak || 0)).catch(() => {});
     wellnessAPI.getGoals(user.id).then(setGoals).catch(() => {});
-  };
+  }, [user.id]);
 
   useEffect(() => {
     analyticsAPI.get(user.id).then(setAnalytics).catch(() => {});
     loadWellness();
     const t = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(t);
-  }, [user.id]);
+  }, [user.id, loadWellness]);
 
   const greeting = () => {
     const h = currentTime.getHours();

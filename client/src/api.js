@@ -1,21 +1,33 @@
-export const API_BASE = 'http://localhost:5000/api';
-const BASE = API_BASE;
+// Base URL from environment variable — set VITE_API_URL in client/.env
+// Falls back to localhost for local development
+const BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1';
 
+/**
+ * Core fetch wrapper.
+ * Automatically attaches the JWT token from localStorage and handles errors.
+ */
 async function req(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  const data = await res.json();
+  const token = localStorage.getItem('mw_token');
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  const res = await fetch(`${BASE}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
     const err = new Error(data.error || 'Request failed');
+    err.status = res.status;
     err.details = data.details;
     throw err;
   }
   return data;
 }
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────────
 export const authAPI = {
   register: (name, email, password) =>
     req('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) }),
@@ -23,70 +35,69 @@ export const authAPI = {
     req('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
 };
 
-// ── User / Onboarding ────────────────────────────────────────────────────────
+// ── User / Onboarding ─────────────────────────────────────────────────────────
+// NOTE: No more /users/:id — user ID comes from the JWT server-side
 export const userAPI = {
-  completeOnboarding: (id, data) =>
-    req(`/users/${id}/onboarding`, { method: 'PUT', body: JSON.stringify(data) }),
-  getProfile: (id) => req(`/users/${id}`),
+  getMe: () => req('/users/me'),
+  completeOnboarding: (data) =>
+    req('/users/onboarding', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
-// ── Chat ─────────────────────────────────────────────────────────────────────
+// ── Chat ──────────────────────────────────────────────────────────────────────
 export const chatAPI = {
-  startSession: (userId, therapyMethod = 'warm') =>
-    req('/chat/session', { method: 'POST', body: JSON.stringify({ userId, therapyMethod }) }),
+  startSession: (therapyMethod = 'warm') =>
+    req('/chat/session', { method: 'POST', body: JSON.stringify({ therapyMethod }) }),
   sendMessage: (sessionId, text, personality, therapyMethod = 'warm') =>
     req('/chat/send', {
       method: 'POST',
       body: JSON.stringify({ sessionId, text, personality, therapyMethod }),
     }),
   getHistory: (sessionId) => req(`/chat/session/${sessionId}`),
-  getSessions: (userId) => req(`/chat/sessions/${userId}`),
+  getSessions: () => req('/chat/sessions'),
 };
 
-// ── Journal ──────────────────────────────────────────────────────────────────
+// ── Journal ───────────────────────────────────────────────────────────────────
 export const journalAPI = {
-  list: (userId) => req(`/journal/${userId}`),
-  create: (userId, data) =>
-    req(`/journal/${userId}`, { method: 'POST', body: JSON.stringify(data) }),
+  list: () => req('/journal'),
+  create: (data) => req('/journal', { method: 'POST', body: JSON.stringify(data) }),
 };
 
-// ── Goals & mood check-ins ───────────────────────────────────────────────────
+// ── Goals & mood check-ins ────────────────────────────────────────────────────
 export const wellnessAPI = {
-  getGoals: (userId) => req(`/wellness/goals/${userId}`),
-  createGoal: (userId, data) =>
-    req(`/wellness/goals/${userId}`, { method: 'POST', body: JSON.stringify(data) }),
-  toggleGoal: (goalId) =>
-    req(`/wellness/goals/${goalId}/toggle`, { method: 'PATCH' }),
-  moodCheckIn: (userId, moodIndex, moodLabel) =>
-    req(`/wellness/mood/${userId}`, {
-      method: 'POST',
-      body: JSON.stringify({ moodIndex, moodLabel }),
-    }),
-  getStreak: (userId) => req(`/wellness/streak/${userId}`),
+  getGoals: () => req('/wellness/goals'),
+  createGoal: (data) => req('/wellness/goals', { method: 'POST', body: JSON.stringify(data) }),
+  toggleGoal: (goalId) => req(`/wellness/goals/${goalId}/toggle`, { method: 'PATCH' }),
+  moodCheckIn: (moodIndex, moodLabel) =>
+    req('/wellness/mood', { method: 'POST', body: JSON.stringify({ moodIndex, moodLabel }) }),
+  getStreak: () => req('/wellness/streak'),
 };
 
-// ── Analytics ────────────────────────────────────────────────────────────────
+// ── Analytics ─────────────────────────────────────────────────────────────────
 export const analyticsAPI = {
-  get: (userId) => req(`/analytics/${userId}`),
+  get: () => req('/analytics'),
 };
 
-// ── AI memory ────────────────────────────────────────────────────────────────
+// ── AI memory ─────────────────────────────────────────────────────────────────
 export const memoryAPI = {
-  get: (userId) => req(`/memory/${userId}`),
-  clear: (userId) => req(`/memory/${userId}`, { method: 'DELETE' }),
-  refreshWithAI: (userId) => req(`/memory/${userId}/refresh`, { method: 'POST' }),
+  get: () => req('/memory'),
+  clear: () => req('/memory', { method: 'DELETE' }),
+  refreshWithAI: () => req('/memory/refresh', { method: 'POST' }),
 };
 
+// ── ML Analysis proxy ─────────────────────────────────────────────────────────
 export const mlAPI = {
-  analyze: (text) =>
-    req('/analyze', { method: 'POST', body: JSON.stringify({ text }) }),
+  analyze: (text) => req('/analyze', { method: 'POST', body: JSON.stringify({ text }) }),
   analyzeVoice: (text, features) =>
-    req('/analyze/voice', {
-      method: 'POST',
-      body: JSON.stringify({ text, features }),
-    }),
+    req('/analyze/voice', { method: 'POST', body: JSON.stringify({ text, features }) }),
 };
 
+// ── Export ────────────────────────────────────────────────────────────────────
+export const exportAPI = {
+  downloadJson: () => req('/export/json'),
+  getReport: () => `${BASE}/export/report?token=${localStorage.getItem('mw_token')}`,
+};
+
+// ── Health check ──────────────────────────────────────────────────────────────
 export async function checkServerHealth() {
   try {
     const res = await fetch(`${BASE}/health`);

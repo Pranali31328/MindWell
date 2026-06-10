@@ -6,20 +6,26 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 export function useVoice({ onTranscript, lang = 'en-IN' }) {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
-  const [sttSupported, setSttSupported] = useState(false);
+  // Lazily initialised so we don't call window APIs during SSR or before mount
+  const [voiceSupported] = useState(() =>
+    typeof window !== 'undefined' && 'speechSynthesis' in window
+  );
+  const [sttSupported] = useState(() =>
+    typeof window !== 'undefined' &&
+    !!(window.SpeechRecognition || window.webkitSpeechRecognition)
+  );
   const recognitionRef = useRef(null);
+  // Keep latest callback in a ref so the effect doesn't need to re-run on every render
+  const onTranscriptRef = useRef(onTranscript);
+  useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
 
   useEffect(() => {
-    const hasTts = typeof window !== 'undefined' && 'speechSynthesis' in window;
-    const SpeechRecognition =
+    const SpeechRecognitionCtor =
       typeof window !== 'undefined' &&
       (window.SpeechRecognition || window.webkitSpeechRecognition);
-    setVoiceSupported(hasTts);
-    setSttSupported(!!SpeechRecognition);
 
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition();
+    if (SpeechRecognitionCtor) {
+      const rec = new SpeechRecognitionCtor();
       rec.continuous = false;
       rec.interimResults = true;
       rec.lang = lang;
@@ -30,7 +36,9 @@ export function useVoice({ onTranscript, lang = 'en-IN' }) {
         for (let i = event.resultIndex; i < event.results.length; i++) {
           transcript += event.results[i][0].transcript;
         }
-        if (transcript && onTranscript) onTranscript(transcript, event.results[event.results.length - 1]?.isFinal);
+        if (transcript && onTranscriptRef.current) {
+          onTranscriptRef.current(transcript, event.results[event.results.length - 1]?.isFinal);
+        }
       };
 
       rec.onend = () => setIsListening(false);
@@ -42,7 +50,7 @@ export function useVoice({ onTranscript, lang = 'en-IN' }) {
       recognitionRef.current?.abort?.();
       window.speechSynthesis?.cancel();
     };
-  }, [lang, onTranscript]);
+  }, [lang]);
 
   const startListening = useCallback(() => {
     const rec = recognitionRef.current;

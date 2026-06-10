@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import * as Lucide from 'lucide-react';
 import PageHeader from './PageHeader.jsx';
 import { PAGE_TITLES } from '../config/navItems.js';

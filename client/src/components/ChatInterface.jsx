@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as Lucide from 'lucide-react';
 import { chatAPI, checkServerHealth, memoryAPI } from '../api.js';
@@ -13,8 +13,6 @@ const MOOD_COLOR = {
   happy:'#00e5c3', calm:'#a78bfa', neutral:'#6b7280',
   anxious:'#ffd166', overwhelmed:'#ff6b6b', distressed:'#ff4444', crisis:'#b91c1c'
 };
-const STRESS_COLOR = { low:'#00e5c3', medium:'#ffd166', high:'#ff6b6b', critical:'#b91c1c' };
-
 // ── Offline AI ────────────────────────────────────────────────────────────────
 const PERSONA = {
   emotional: {
@@ -144,6 +142,12 @@ const QUICK_PROMPTS = [
   "I need a quick calming technique",
 ];
 
+const greetingMsg = (user) => ({
+  id: 'init', sender: 'bot',
+  text: `Hello ${user?.name?.split(' ')[0] || 'there'}! 👋 I'm your AI mental health companion. I'm here to listen without judgment — how are you feeling today?`,
+  timestamp: new Date().toISOString(),
+});
+
 export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) {
   const [sessionId, setSessionId]     = useState(null);
   const [therapyMethod, setTherapyMethod] = useState('warm'); // cbt | mindfulness | warm
@@ -182,13 +186,16 @@ export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) 
     if (!user?.id) return;
     setMemoryLoading(true);
     try {
-      const mem = await memoryAPI.get(user.id);
+      const mem = await memoryAPI.get(user?.id);
       setUserMemory(mem);
     } catch { /* ignore */ }
     finally { setMemoryLoading(false); }
-  }, [user?.id]);
+  }, [user]);
 
-  useEffect(() => { loadMemory(); }, [loadMemory]);
+  useEffect(() => {
+    const init = async () => { await loadMemory(); };
+    init();
+  }, [loadMemory]);
 
   const handleVoiceTranscript = useCallback(async (transcript, isFinal) => {
     onTranscriptUpdate(transcript);
@@ -220,11 +227,44 @@ export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) 
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
   };
 
-  const greetingMsg = () => ({
-    id: 'init', sender: 'bot',
-    text: `Hello ${user?.name?.split(' ')[0] || 'there'}! 👋 I'm your AI mental health companion. I'm here to listen without judgment — how are you feeling today?`,
-    timestamp: new Date().toISOString(),
-  });
+  const loadSessionHistory = async (id) => {
+    setSessionId(id);
+    setSending(true);
+    try {
+      const history = await chatAPI.getHistory(id);
+      if (history.length === 0) {
+        setMessages([greetingMsg(user)]);
+        setAnalysis(null); setWellness(75);
+      } else {
+        setMessages(history.map(m => ({ ...m, timestamp: m.timestamp || new Date().toISOString() })));
+        const last = [...history].reverse().find(m => m.sender === 'user' && m.emotionMetrics);
+        if (last?.emotionMetrics) {
+          const em = last.emotionMetrics;
+          setAnalysis({ mood:em.currentMood, stress_level:em.stressLevel, stress_score:em.stressScore, wellness_score:em.wellnessScore, crisis_risk:em.crisisScore, sentiment:em.sentiment, compound:em.compound, workplace_flags:[], loneliness_flag:false });
+          setWellness(em.wellnessScore);
+        }
+      }
+    } catch {
+      setMessages([greetingMsg(user)]); setAnalysis(null); setWellness(75);
+    } finally { setSending(false); }
+  };
+
+  const handleNewSession = async () => {
+    setSending(true);
+    try {
+      const s = await chatAPI.startSession(user.id, therapyMethod);
+      setSessionId(s.id);
+      setMessages([greetingMsg(user)]);
+      setAnalysis(null); setWellness(75);
+      // We don't call loadSessions here directly to avoid cyclic dependencies
+    } catch {
+      // Offline new session
+      setOfflineMode(true);
+      setSessionId('offline-' + new Date().getTime());
+      setMessages([greetingMsg(user)]);
+      setAnalysis(null); setWellness(75);
+    } finally { setSending(false); }
+  };
 
   const ensureOnlineSession = useCallback(async () => {
     const health = await checkServerHealth();
@@ -236,22 +276,22 @@ export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) 
     try {
       const s = await chatAPI.startSession(user.id, therapyMethod);
       setSessionId(s.id);
-      setMessages([greetingMsg()]);
+      setMessages([greetingMsg(user)]);
       setAnalysis(null);
       setWellness(75);
       return { ok: true, sessionId: s.id };
     } catch {
       return { ok: false };
     }
-  }, [user.id, therapyMethod, sessionId]);
+  }, [user, therapyMethod, sessionId]);
 
   // Load sessions; only use offline mode if server is truly unreachable
   const loadSessions = useCallback(async (selectLatest = true) => {
     const health = await checkServerHealth();
     if (!health?.ok) {
       setOfflineMode(true);
-      setMessages([greetingMsg()]);
-      setSessionId('offline-' + Date.now());
+      setMessages([greetingMsg(user)]);
+      setSessionId('offline-' + new Date().getTime());
       addToast('Backend offline — start server on port 5000 for full AI chat.', 'danger');
       return;
     }
@@ -272,52 +312,18 @@ export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) 
       const restored = await ensureOnlineSession();
       if (!restored.ok) {
         setOfflineMode(true);
-        setSessionId('offline-' + Date.now());
-        setMessages([greetingMsg()]);
+        setSessionId('offline-' + new Date().getTime());
+        setMessages([greetingMsg(user)]);
       }
     }
-  }, [user.id]);
+  }, [user, ensureOnlineSession, handleNewSession, loadSessionHistory]);
 
-  const loadSessionHistory = async (id) => {
-    setSessionId(id);
-    setSending(true);
-    try {
-      const history = await chatAPI.getHistory(id);
-      if (history.length === 0) {
-        setMessages([greetingMsg()]);
-        setAnalysis(null); setWellness(75);
-      } else {
-        setMessages(history.map(m => ({ ...m, timestamp: m.timestamp || new Date().toISOString() })));
-        const last = [...history].reverse().find(m => m.sender === 'user' && m.emotionMetrics);
-        if (last?.emotionMetrics) {
-          const em = last.emotionMetrics;
-          setAnalysis({ mood:em.currentMood, stress_level:em.stressLevel, stress_score:em.stressScore, wellness_score:em.wellnessScore, crisis_risk:em.crisisScore, sentiment:em.sentiment, compound:em.compound, workplace_flags:[], loneliness_flag:false });
-          setWellness(em.wellnessScore);
-        }
-      }
-    } catch {
-      setMessages([greetingMsg()]); setAnalysis(null); setWellness(75);
-    } finally { setSending(false); }
-  };
 
-  const handleNewSession = async () => {
-    setSending(true);
-    try {
-      const s = await chatAPI.startSession(user.id, therapyMethod);
-      setSessionId(s.id);
-      setMessages([greetingMsg()]);
-      setAnalysis(null); setWellness(75);
-      loadSessions(false);
-    } catch {
-      // Offline new session
-      setOfflineMode(true);
-      setSessionId('offline-' + Date.now());
-      setMessages([greetingMsg()]);
-      setAnalysis(null); setWellness(75);
-    } finally { setSending(false); }
-  };
 
-  useEffect(() => { loadSessions(true); }, [loadSessions]);
+  useEffect(() => {
+    const init = async () => { await loadSessions(true); };
+    init();
+  }, [loadSessions]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior:'smooth' }); }, [messages]);
 
   const handleSend = async (overrideText) => {
@@ -327,7 +333,7 @@ export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) 
     setSending(true);
     setShowPrompts(false);
 
-    const tmpId = `tmp-${Date.now()}`;
+    const tmpId = `tmp-${new Date().getTime()}`;
     setMessages(prev => [...prev, { id:tmpId, sender:'user', text, timestamp:new Date().toISOString() }]);
 
     let activeSessionId = sessionId;
@@ -343,8 +349,8 @@ export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) 
         setWellness(Math.round(ai.analysis.wellness_score));
         setMessages(prev => [
           ...prev.filter(m => m.id !== tmpId),
-          { id:`u-${Date.now()}`, sender:'user', text, timestamp:new Date().toISOString() },
-          { id:`b-${Date.now()}`, sender:'bot', text:ai.text, isMicroWin:ai.isMicroWin, timestamp:new Date().toISOString() },
+          { id:`u-${new Date().getTime()}`, sender:'user', text, timestamp:new Date().toISOString() },
+          { id:`b-${new Date().getTime()}`, sender:'bot', text:ai.text, isMicroWin:ai.isMicroWin, timestamp:new Date().toISOString() },
         ]);
         setSending(false);
         return;
@@ -382,7 +388,6 @@ export default function ChatInterface({ user, onNavigate, theme, toggleTheme }) 
   };
 
   const moodColor   = analysis ? (MOOD_COLOR[analysis.mood]   || '#6b7280') : '#6b7280';
-  const stressColor = analysis ? (STRESS_COLOR[analysis.stress_level] || '#00e5c3') : '#00e5c3';
   const displayMood = voiceEmotion?.mood || analysis?.mood || typingEmotion?.mood || 'neutral';
 
   const handleToggleListen = async () => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import * as Lucide from 'lucide-react';
 import Auth from './components/Auth.jsx';
 import Onboarding from './components/Onboarding.jsx';
@@ -62,7 +62,7 @@ function LoadingScreen() {
 }
 
 // ── Journal ───────────────────────────────────────────────────────────────────
-function Journal({ user, onNavigate }) {
+function Journal({ user }) {
   const [entry, setEntry] = useState('');
   const [mood, setMood]   = useState(null);
   const [tags, setTags]   = useState([]);
@@ -310,7 +310,7 @@ const BREATH_MODES = {
   },
 };
 
-function BreathingExercise({ onNavigate }) {
+function BreathingExercise() {
   const [modeKey, setModeKey]   = useState('478');
   const [phase, setPhase]       = useState('ready');
   const [count, setCount]       = useState(0);
@@ -346,8 +346,10 @@ function BreathingExercise({ onNavigate }) {
     const idx = PHASES.findIndex(p => p.key === phase);
     if (idx === -1) return;
     const dur = PHASES[idx].duration;
-    setCount(dur);
-    setScale(PHASES[idx].target);
+    setTimeout(() => {
+      setCount(dur);
+      setScale(PHASES[idx].target);
+    }, 0);
     timerRef.current = setInterval(() => {
       setCount(c => {
         if (c <= 1) {
@@ -364,7 +366,7 @@ function BreathingExercise({ onNavigate }) {
       });
     }, 1000);
     return () => clearInterval(timerRef.current);
-  }, [phase, running, modeKey]);
+  }, [phase, running, modeKey, PHASES]);
 
   const current = PHASES.find(p => p.key === phase) || PHASES[0];
 
@@ -553,7 +555,7 @@ function BurnoutTest({ onNavigate }) {
 }
 
 // ── Focus Timer (Pomodoro) ────────────────────────────────────────────────────
-function FocusTimer({ onNavigate }) {
+function FocusTimer() {
   const [mode, setMode]         = useState('focus'); // focus | short | long
   const [running, setRunning]   = useState(false);
   const [seconds, setSeconds]   = useState(25 * 60);
@@ -587,7 +589,6 @@ function FocusTimer({ onNavigate }) {
   const reset = () => { clearInterval(timerRef.current); setRunning(false); setSeconds(MODES[mode].secs); };
   const switchMode = (m) => { clearInterval(timerRef.current); setRunning(false); setMode(m); setSeconds(MODES[m].secs); };
 
-  useEffect(() => { setSeconds(MODES[mode].secs); }, []);
   useEffect(() => () => clearInterval(timerRef.current), []);
 
   const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -748,7 +749,7 @@ export default function App() {
 
   const handleAuthSuccess    = u => { setUser(u); setPage(u.onboardingComplete ? 'dashboard' : 'onboarding'); };
   const handleOnboardingDone = u => { setUser(u); setPage('dashboard'); };
-  const handleLogout         = () => { localStorage.removeItem('mw_user'); setUser(null); setPage('auth'); };
+  const handleLogout         = () => { localStorage.removeItem('mw_user'); localStorage.removeItem('mw_token'); setUser(null); setPage('auth'); };
   const toggleTheme          = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
   if (!loaded) return <LoadingScreen />;

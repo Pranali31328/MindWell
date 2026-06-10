@@ -45,11 +45,10 @@ export function useTypingEmotion(text, debounceMs = 280) {
   const trimmed = useMemo(() => (text || '').trim(), [text]);
 
   useEffect(() => {
-    if (!trimmed) {
-      setLive(null);
-      return undefined;
-    }
-    const id = setTimeout(() => setLive(analyzeText(trimmed)), debounceMs);
+    // Always use setTimeout so setState is never called synchronously in the effect body,
+    // preventing cascading re-renders. A 0ms delay still clears the value immediately after paint.
+    const delay = trimmed ? debounceMs : 0;
+    const id = setTimeout(() => setLive(trimmed ? analyzeText(trimmed) : null), delay);
     return () => clearTimeout(id);
   }, [trimmed, debounceMs]);
 

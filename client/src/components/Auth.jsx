@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import * as Lucide from 'lucide-react';
 import { authAPI } from '../api.js';
 
@@ -17,14 +17,15 @@ export default function Auth({ onAuthSuccess }) {
     }
     setLoading(true);
     try {
-      let user;
+      let res;
       if (isLogin) {
-        user = await authAPI.login(form.email, form.password);
+        res = await authAPI.login(form.email, form.password);
       } else {
-        user = await authAPI.register(form.name, form.email, form.password);
+        res = await authAPI.register(form.name, form.email, form.password);
       }
-      localStorage.setItem('mw_user', JSON.stringify(user));
-      onAuthSuccess(user);
+      localStorage.setItem('mw_token', res.token);
+      localStorage.setItem('mw_user', JSON.stringify(res.user));
+      onAuthSuccess(res.user);
     } catch (err) {
       // If server provides details, show them
       const msg = err.details ? `${err.message} (${err.details})` : err.message;

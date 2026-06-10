@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 
 /**
  * Web Audio analyser — volume + pitch samples while the mic is active.
@@ -10,37 +10,42 @@ export function useAudioProsody() {
   const rafRef = useRef(null);
   const volumesRef = useRef([]);
   const pitchesRef = useRef([]);
+  // Store the loop function in a ref so requestAnimationFrame can call it
+  // without creating a circular useCallback dependency (fixes lint error)
+  const sampleLoopRef = useRef(null);
 
-  const sampleLoop = useCallback(() => {
-    const analyser = analyserRef.current;
-    const ctx = ctxRef.current;
-    if (!analyser || !ctx) return;
+  useEffect(() => {
+    sampleLoopRef.current = () => {
+      const analyser = analyserRef.current;
+      const ctx = ctxRef.current;
+      if (!analyser || !ctx) return;
 
-    const bins = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(bins);
+      const bins = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(bins);
 
-    let sum = 0;
-    let peak = 0;
-    let peakIdx = 0;
-    const start = 4;
-    const end = Math.floor(bins.length * 0.45);
-    for (let i = start; i < end; i++) {
-      sum += bins[i];
-      if (bins[i] > peak) {
-        peak = bins[i];
-        peakIdx = i;
+      let sum = 0;
+      let peak = 0;
+      let peakIdx = 0;
+      const start = 4;
+      const end = Math.floor(bins.length * 0.45);
+      for (let i = start; i < end; i++) {
+        sum += bins[i];
+        if (bins[i] > peak) {
+          peak = bins[i];
+          peakIdx = i;
+        }
       }
-    }
-    const avg = sum / Math.max(end - start, 1);
-    volumesRef.current.push(avg);
+      const avg = sum / Math.max(end - start, 1);
+      volumesRef.current.push(avg);
 
-    const hz = (peakIdx * ctx.sampleRate) / analyser.fftSize;
-    if (hz > 75 && hz < 450 && peak > 30) {
-      pitchesRef.current.push(hz);
-    }
+      const hz = (peakIdx * ctx.sampleRate) / analyser.fftSize;
+      if (hz > 75 && hz < 450 && peak > 30) {
+        pitchesRef.current.push(hz);
+      }
 
-    rafRef.current = requestAnimationFrame(sampleLoop);
-  }, []);
+      rafRef.current = requestAnimationFrame(sampleLoopRef.current);
+    };
+  });
 
   const startCapture = useCallback(async () => {
     volumesRef.current = [];
@@ -59,12 +64,12 @@ export function useAudioProsody() {
       analyser.smoothingTimeConstant = 0.65;
       source.connect(analyser);
       analyserRef.current = analyser;
-      sampleLoop();
+      sampleLoopRef.current?.();
       return true;
     } catch {
       return false;
     }
-  }, [sampleLoop]);
+  }, []);
 
   const stopCapture = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);

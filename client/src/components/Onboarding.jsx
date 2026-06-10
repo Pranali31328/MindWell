@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import * as Lucide from 'lucide-react';
 import { userAPI } from '../api.js';
 
