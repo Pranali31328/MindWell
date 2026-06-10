@@ -1,0 +1,23 @@
+# MindWell Migration Tasks
+
+- `[x]` Phase 1: Project Initialization & Re-structuring
+  - `[x]` Initialize Vite React project
+  - `[x]` Initialize Express Backend basic structure
+  - `[x]` Break down `app.txt` into modular React components (`src/components/...`)
+  - `[x]` Integrate `styles.css`
+- `[x]` Phase 2: Database Layer Setup
+  - `[x]` Define Prisma Schema (User, ChatSession, ChatMessage, EmotionMetric)
+  - `[x]` Setup SQLite DB
+- `[x]` Phase 3: Hybrid Architecture Integration
+  - `[x]` Create Python ML Service (Flask + VADER sentiment + crisis detection)
+  - `[x]` Add Auth routes to Node.js backend (bcryptjs)
+  - `[x]` Add ML proxy + smart chat respond endpoint to Node.js
+  - `[x]` Update Prisma schema to add password field to User
+  - `[x]` Wire React frontend to real API endpoints (remove localStorage)
+  - `[x]` Show live emotion/sentiment data in ChatInterface
+- `[x]` Phase 4: Verification
+  - `[x]` Fixed Prisma schema missing `DATABASE_URL` (resolves Registration bugs)
+  - `[x]` Restored missing frontend CSS classes in `index.css`
+  - `[x]` Verified Node.js and Python environments are ready
+  - `[x]` Run all three services and test Onboarding -> Chat flow
+  - `[x]` Validate sentiment analysis pipeline works end-to-end

@@ -1,0 +1,2051 @@
+
+  
+        const LucideIcon = ({ name, size = 24, className = "" }) => {
+            React.useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+
+            return <i data-lucide={name} style={{ width: size, height: size }} className={className}></i>;
+        };
+
+        function LoadingScreen() {
+            const [progress, setProgress] = React.useState(0);
+            const features = [
+                { icon: "keyboard", text: "Real-time Typing Behavior Analysis" },
+                { icon: "alert-triangle", text: "Proactive Crisis Risk Prediction" },
+                { icon: "smile", text: "Personalized Therapy Styles" },
+                { icon: "hard-drive", text: "Contextual Memory Engine" },
+                { icon: "moon", text: "Intelligent Loneliness Detection" },
+                { icon: "bar-chart-2", text: "Visual Emotional Analytics" },
+                { icon: "users", text: "Conflict Resolution Assistant" },
+                { icon: "target", text: "Micro-Wins Motivation System" },
+                { icon: "shield-check", text: "Trauma-Safe Content Filtering" },
+                { icon: "wind", text: "Emergency Calm Interventions" }
+            ];
+
+            React.useEffect(() => {
+                const timer = setInterval(() => {
+                    setProgress(prev => {
+                        if (prev >= 100) {
+                            clearInterval(timer);
+                            return 100;
+                        }
+                        return prev + 1;
+                    });
+                }, 30);
+
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="loading-screen">
+                    <div className="loading-container">
+                        <div className="loading-logo">
+                            <LucideIcon name="brain-circuit" size={64} />
+                        </div>
+                        <h1 className="loading-title">MindWell</h1>
+                        <p className="loading-subtitle">
+                            AI-Powered Mental Health Chatbot for Working Professionals
+                            <br />
+                            <span style={{ fontSize: '14px', opacity: 0.7 }}>
+                                Revolutionizing Workplace Well-being through Emotion-Aware AI
+                            </span>
+                        </p>
+
+                        <div className="feature-grid">
+                            {features.map((feature, index) => (
+                                <div key={index} className="feature-item" style={{ animationDelay: `${index * 0.1}s` }}>
+                                    <div className="feature-icon">
+                                        <LucideIcon name={feature.icon} size={20} />
+                                    </div>
+                                    <div className="feature-text">{feature.text}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="loading-progress">
+                            <div
+                                className="progress-bar"
+                                style={{ width: `${progress}%` }}
+                            ></div>
+                        </div>
+
+                        <div style={{ marginTop: '30px', opacity: 0.7, fontSize: '14px' }}>
+                            <div>Team: Sneha Dhole, Pranali Pawar, Sanika More, Samruddhi Patil</div>
+                            <div>Guide: Mr. Sandeep Pande • Academic Year: 2025–26</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Onboarding({ onComplete }) {
+            const [step, setStep] = React.useState(1);
+            const [userData, setUserData] = React.useState({
+                name: '',
+                email: '',
+                profession: '',
+                company: '',
+                personality: '',
+                primaryStressors: [],
+                goals: []
+            });
+
+            const personalityTypes = [
+                {
+                    id: 'analytical',
+                    icon: 'microscope',
+                    title: 'Analytical',
+                    description: 'Prefers logical analysis, data-driven insights, and structured problem-solving',
+                    therapyStyle: 'Cognitive-Behavioral Therapy (CBT) approach'
+                },
+                {
+                    id: 'emotional',
+                    icon: 'heart',
+                    title: 'Emotional',
+                    description: 'Values emotional validation, empathy, and expressive communication',
+                    therapyStyle: 'Person-Centered Therapy approach'
+                },
+                {
+                    id: 'avoidant',
+                    icon: 'shield',
+                    title: 'Avoidant',
+                    description: 'Needs gentle guidance, gradual exposure, and low-pressure support',
+                    therapyStyle: 'Gentle Exposure Therapy approach'
+                },
+                {
+                    id: 'overthinker',
+                    icon: 'activity',
+                    title: 'Overthinker',
+                    description: 'Requires structured steps, clear boundaries, and cognitive restructuring',
+                    therapyStyle: 'Structured Problem-Solving approach'
+                }
+            ];
+
+            const stressOptions = [
+                'Work deadlines & pressure',
+                'Meeting overload',
+                'Work-life balance',
+                'Team conflicts',
+                'Performance anxiety',
+                'Burnout & exhaustion',
+                'Imposter syndrome',
+                'Career uncertainty'
+            ];
+
+            const goalOptions = [
+                'Reduce daily stress levels',
+                'Improve work-life balance',
+                'Develop healthy coping mechanisms',
+                'Increase emotional resilience',
+                'Enhance sleep quality',
+                'Boost productivity & focus',
+                'Improve communication skills',
+                'Build self-confidence'
+            ];
+
+            const handleNext = async () => {
+                if (step < 3) {
+                    setStep(step + 1);
+                } else {
+                    try {
+                        const response = await fetch('http://localhost:5000/api/users', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(userData)
+                        });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const sessionRes = await fetch('http://localhost:5000/api/chat/session', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: data.id })
+                            });
+                            if (sessionRes.ok) {
+                                const sessionData = await sessionRes.json();
+                                localStorage.setItem('chatSessionId', sessionData.id);
+                            }
+                            localStorage.setItem('userId', data.id);
+                        }
+                    } catch (error) {
+                        console.error('Failed to sync user with backend:', error);
+                    }
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    localStorage.setItem('onboardingComplete', 'true');
+                    localStorage.setItem('userPersonality', userData.personality);
+                    onComplete();
+                }
+            };
+
+            const handleBack = () => {
+                if (step > 1) {
+                    setStep(step - 1);
+                }
+            };
+
+            const toggleStressOption = (option) => {
+                setUserData(prev => ({
+                    ...prev,
+                    primaryStressors: prev.primaryStressors.includes(option)
+                        ? prev.primaryStressors.filter(o => o !== option)
+                        : [...prev.primaryStressors, option]
+                }));
+            };
+
+            const toggleGoalOption = (option) => {
+                setUserData(prev => ({
+                    ...prev,
+                    goals: prev.goals.includes(option)
+                        ? prev.goals.filter(o => o !== option)
+                        : [...prev.goals, option]
+                }));
+            };
+
+            return (
+                <div className="onboarding-page">
+                    <div className="onboarding-container">
+                        <div className="onboarding-header">
+                            <div className="onboarding-logo">
+                                <LucideIcon name="brain-circuit" size={60} />
+                            </div>
+                            <h1 className="onboarding-title">Personalize Your Experience</h1>
+                            <p className="onboarding-subtitle">
+                                Help us understand you better to provide personalized mental health support
+                            </p>
+                        </div>
+
+                        <div className="onboarding-step">
+                            {step === 1 && (
+                                <>
+                                    <div className="step-header">
+                                        <div className="step-number">1</div>
+                                        <div>
+                                            <h2 className="step-title">Basic Information</h2>
+                                            <p className="step-description">
+                                                Tell us about yourself (all information is completely private)
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="input-grid">
+                                        <input
+                                            type="text"
+                                            className="input-field"
+                                            placeholder="Your Full Name"
+                                            value={userData.name}
+                                            onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                                        />
+                                        <input
+                                            type="email"
+                                            className="input-field"
+                                            placeholder="Email Address (optional)"
+                                            value={userData.email}
+                                            onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                                        />
+                                        <input
+                                            type="text"
+                                            className="input-field"
+                                            placeholder="Profession/Role"
+                                            value={userData.profession}
+                                            onChange={(e) => setUserData({ ...userData, profession: e.target.value })}
+                                        />
+                                        <input
+                                            type="text"
+                                            className="input-field"
+                                            placeholder="Company/Organization (optional)"
+                                            value={userData.company}
+                                            onChange={(e) => setUserData({ ...userData, company: e.target.value })}
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            {step === 2 && (
+                                <>
+                                    <div className="step-header">
+                                        <div className="step-number">2</div>
+                                        <div>
+                                            <h2 className="step-title">Your Support Style</h2>
+                                            <p className="step-description">
+                                                How would you like your AI companion to interact with you?
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="personality-cards">
+                                        {personalityTypes.map((type) => (
+                                            <div
+                                                key={type.id}
+                                                className={`personality-card ${userData.personality === type.id ? 'selected' : ''}`}
+                                                onClick={() => setUserData({ ...userData, personality: type.id })}
+                                            >
+                                                <div className="card-icon">
+                                                    <LucideIcon name={type.icon} size={32} />
+                                                </div>
+                                                <h3 className="card-title">{type.title}</h3>
+                                                <p className="card-description">{type.description}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {step === 3 && (
+                                <>
+                                    <div className="step-header">
+                                        <div className="step-number">3</div>
+                                        <div>
+                                            <h2 className="step-title">Your Wellness Goals</h2>
+                                            <p className="step-description">
+                                                Select what you'd like to focus on during our sessions
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: '30px' }}>
+                                        <h3 style={{ marginBottom: '15px', color: 'var(--text-secondary)' }}>Primary Stressors</h3>
+                                        <div className="checkbox-group">
+                                            {stressOptions.map((option, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="checkbox-item"
+                                                    onClick={() => toggleStressOption(option)}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userData.primaryStressors.includes(option)}
+                                                        onChange={() => { }}
+                                                    />
+                                                    <span>{option}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h3 style={{ marginBottom: '15px', color: 'var(--text-secondary)' }}>Wellness Goals</h3>
+                                        <div className="checkbox-group">
+                                            {goalOptions.map((option, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="checkbox-item"
+                                                    onClick={() => toggleGoalOption(option)}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={userData.goals.includes(option)}
+                                                        onChange={() => { }}
+                                                    />
+                                                    <span>{option}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            <div className="step-navigation">
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={handleBack}
+                                    disabled={step === 1}
+                                >
+                                    ← Back
+                                </button>
+
+                                <div className="step-dots">
+                                    {[1, 2, 3].map((s) => (
+                                        <div
+                                            key={s}
+                                            className={`step-dot ${step === s ? 'active' : ''}`}
+                                        ></div>
+                                    ))}
+                                </div>
+
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleNext}
+                                    disabled={step === 2 && !userData.personality}
+                                >
+                                    {step === 3 ? 'Complete Setup →' : 'Continue →'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function LonelinessSanctuary({ onClose }) {
+            const [textIndex, setTextIndex] = React.useState(0);
+            const [particles, setParticles] = React.useState([]);
+
+            const messages = [
+                "You are safe here.",
+                "This feeling is temporary.",
+                "Your worth is not defined by productivity.",
+                "You are enough, just as you are.",
+                "Breathe in... and let go.",
+                "The stars shine brightest in the dark."
+            ];
+
+            React.useEffect(() => {
+                const interval = setInterval(() => {
+                    setTextIndex((prev) => (prev + 1) % messages.length);
+                }, 4000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const handleRelease = (e) => {
+                const rect = e.target.getBoundingClientRect();
+                const newParticles = [];
+                for (let i = 0; i < 30; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = 50 + Math.random() * 100;
+                    newParticles.push({
+                        id: Date.now() + i,
+                        tx: Math.cos(angle) * velocity + 'px',
+                        ty: Math.sin(angle) * velocity + 'px'
+                    });
+                }
+                setParticles(newParticles);
+                setTimeout(() => setParticles([]), 1000);
+            };
+
+            return (
+                <div className="sanctuary-overlay">
+                    {/* Background Stars */}
+                    {[...Array(50)].map((_, i) => (
+                        <div
+                            key={i}
+                            className="star"
+                            style={{
+                                top: Math.random() * 100 + '%',
+                                left: Math.random() * 100 + '%',
+                                width: Math.random() * 3 + 1 + 'px',
+                                height: Math.random() * 3 + 1 + 'px',
+                                '--duration': Math.random() * 3 + 2 + 's',
+                                '--delay': Math.random() * 5 + 's'
+                            }}
+                        ></div>
+                    ))}
+
+                    <div className="breathing-circle">
+                        <LucideIcon name="wind" size={48} color="rgba(255,255,255,0.8)" />
+                    </div>
+
+                    <div key={textIndex} className="comfort-text" style={{ animation: 'floatText 4s ease-in-out' }}>
+                        {messages[textIndex]}
+                    </div>
+
+                    <div style={{ position: 'relative' }}>
+                        <button className="release-btn" onClick={handleRelease}>
+                            Release Stress
+                        </button>
+                        {particles.map(p => (
+                            <div
+                                key={p.id}
+                                className="particle"
+                                style={{
+                                    left: '50%',
+                                    top: '50%',
+                                    '--tx': p.tx,
+                                    '--ty': p.ty,
+                                    animation: 'particleDissolve 0.8s ease-out forwards'
+                                }}
+                            ></div>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={onClose}
+                        style={{
+                            position: 'absolute',
+                            top: '40px',
+                            right: '40px',
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'rgba(255,255,255,0.5)',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        <LucideIcon name="x" size={20} /> Exit Sanctuary
+                    </button>
+                </div>
+            );
+        }
+
+        function Dashboard({ onNavigate }) {
+            const [userData, setUserData] = React.useState(null);
+            const [showSanctuary, setShowSanctuary] = React.useState(false);
+
+            React.useEffect(() => {
+                const data = localStorage.getItem('userData');
+                if (data) {
+                    setUserData(JSON.parse(data));
+                }
+            }, []);
+
+            const stats = [
+                { icon: 'smile', value: '87%', label: 'Overall Mood Score', color: '#10b981', trend: '+5%' },
+                { icon: 'shield-check', value: '12', label: 'Low Risk Days', color: '#f59e0b', trend: '-3' },
+                { icon: 'message-circle', value: '48', label: 'AI Sessions', color: '#3b82f6', trend: '+12' },
+                { icon: 'target', value: '23', label: 'Micro-Wins', color: '#8b5cf6', trend: '+8' }
+            ];
+
+            const features = [
+                {
+                    icon: 'keyboard',
+                    title: 'Smart Typing Analysis',
+                    description: 'AI detects emotions from typing patterns - speed, backspaces, pauses, and CAPS usage',
+                    tags: ['Real-time', 'Psychological', 'Non-invasive'],
+                    page: 'chat'
+                },
+                {
+                    icon: 'bar-chart-2',
+                    title: 'Mood Stability Index',
+                    description: 'Track your emotional baseline and stability score over time with visual trends',
+                    tags: ['Data-driven', 'Insights', 'Stability'],
+                    page: 'analytics'
+                },
+                {
+                    icon: 'user-check',
+                    title: 'AI Wellness Advisor',
+                    description: 'Personalized mental health coaching adapted to your communication style',
+                    tags: ['Personalized', 'Coaching', 'Growth'],
+                    page: 'chat'
+                },
+                {
+                    icon: 'briefcase',
+                    title: 'Work-Life Balance Analyzer',
+                    description: 'AI audits your stress patterns compared to work hours to suggest healthier boundaries',
+                    tags: ['Balance', 'Career', 'Wellness'],
+                    page: 'analytics'
+                },
+                {
+                    icon: 'moon',
+                    title: 'Loneliness Mode',
+                    description: 'Special support mode activated during late nights or when detecting loneliness signals',
+                    tags: ['Compassionate', 'Timely', 'Supportive'],
+                    page: 'chat'
+                },
+                {
+                    icon: 'shield',
+                    title: 'Safety Tools',
+                    description: 'Trauma-safe filters, conflict helper, and emergency calm interventions',
+                    tags: ['Safe', 'Tools', 'Emergency'],
+                    page: 'settings'
+                }
+            ];
+
+            return (
+                <div className="dashboard-page">
+                    <nav className="dashboard-nav">
+                        <div className="nav-brand">
+                            <div className="brand-logo">
+                                <LucideIcon name="brain-circuit" size={32} />
+                            </div>
+                            <div className="brand-name">MindWell</div>
+                        </div>
+
+                        <div className="nav-menu">
+                            <a href="#" className="nav-item active" onClick={(e) => { e.preventDefault(); onNavigate('dashboard'); }}>
+                                <LucideIcon name="home" size={18} /> Dashboard
+                            </a>
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('chat'); }}>
+                                <LucideIcon name="message-circle" size={18} /> AI Chat
+                            </a>
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('analytics'); }}>
+                                <LucideIcon name="bar-chart-2" size={18} /> Analytics
+                            </a>
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('settings'); }}>
+                                <LucideIcon name="settings" size={18} /> Settings
+                            </a>
+                        </div>
+
+                        <div className="nav-actions">
+                            <div className="user-profile">
+                                <div className="user-avatar">
+                                    {userData?.name?.charAt(0) || 'U'}
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '14px', fontWeight: '600' }}>
+                                        {userData?.name || 'User'}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                        {userData?.profession || 'Professional'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main className="dashboard-main">
+                        <div className="dashboard-header">
+                            <div className="welcome-section">
+                                <h1 className="welcome-title">Welcome back, {userData?.name?.split(' ')[0] || 'there'}! 👋</h1>
+                                <p className="welcome-subtitle">
+                                    Your AI mental health companion is ready to support you through today's challenges.
+                                    {userData?.primaryStressors?.length > 0 && ` We're focusing on: ${userData.primaryStressors.slice(0, 2).join(', ')}`}
+                                </p>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => onNavigate('chat')}
+                                >
+                                    <LucideIcon name="message-circle" size={18} /> Start Chat Session
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="stats-grid">
+                            {stats.map((stat, index) => (
+                                <div key={index} className="stat-card">
+                                    <div className="stat-icon" style={{ background: `${stat.color}20`, color: stat.color }}>
+                                        <LucideIcon name={stat.icon} size={28} />
+                                    </div>
+                                    <div className="stat-info">
+                                        <div className="stat-value">{stat.value}</div>
+                                        <div className="stat-label">{stat.label}</div>
+                                        <div style={{ fontSize: '12px', color: stat.color, marginTop: '5px' }}>
+                                            {stat.trend} this week
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <h2 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: '700' }}>
+                            Featured AI Capabilities
+                        </h2>
+
+                        <div className="features-grid">
+                            {features.map((feature, index) => (
+                                <div
+                                    key={index}
+                                    className="feature-card"
+                                    onClick={() => onNavigate(feature.page)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="feature-card-header">
+                                        <div className="feature-card-icon" style={{ background: 'rgba(59, 130, 246, 0.2)', color: 'var(--light-blue)' }}>
+                                            <LucideIcon name={feature.icon} size={24} />
+                                        </div>
+                                        <h3 className="feature-card-title">{feature.title}</h3>
+                                    </div>
+                                    <p className="feature-card-description">{feature.description}</p>
+                                    <div className="feature-card-tags">
+                                        {feature.tags.map((tag, i) => (
+                                            <span key={i} className="feature-tag">{tag}</span>
+                                        ))}
+                                    </div>
+                                    <button
+                                        className="btn btn-secondary"
+                                        style={{ marginTop: '15px', width: '100%' }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (feature.title === 'Loneliness Mode') {
+                                                setShowSanctuary(true);
+                                            } else {
+                                                onNavigate(feature.page);
+                                            }
+                                        }}
+                                    >
+                                        Explore Feature →
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </main>
+
+                    {showSanctuary && <LonelinessSanctuary onClose={() => setShowSanctuary(false)} />}
+                </div>
+            );
+        }
+
+        function ChatInterface({ onNavigate }) {
+            const [messages, setMessages] = React.useState([
+                {
+                    id: 1,
+                    text: "Hello! I'm your AI mental health companion. I can detect emotions from how you type, not just what you type. How are you feeling today?",
+                    sender: 'bot',
+                    timestamp: new Date(),
+                    typingMetrics: null
+                }
+            ]);
+            const [inputText, setInputText] = React.useState('');
+            const [isTyping, setIsTyping] = React.useState(false);
+            const [typingMetrics, setTypingMetrics] = React.useState({
+                speed: 0,
+                backspaces: 0,
+                pauses: 0,
+                capsBursts: 0,
+                currentMood: 'neutral'
+            });
+            const [crisisScore, setCrisisScore] = React.useState(25);
+            const [showEmergencyModal, setShowEmergencyModal] = React.useState(false);
+            const [lonelinessMode, setLonelinessMode] = React.useState(false);
+
+            const messagesEndRef = React.useRef(null);
+            const typingTimerRef = React.useRef(null);
+            const [lastTypingTime, setLastTypingTime] = React.useState(Date.now());
+            const [isListening, setIsListening] = React.useState(false);
+            const recognitionRef = React.useRef(null);
+
+            React.useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = true;
+                    recognitionRef.current.interimResults = true;
+
+                    recognitionRef.current.onresult = (event) => {
+                        let finalTranscript = '';
+                        for (let i = event.resultIndex; i < event.results.length; ++i) {
+                            if (event.results[i].isFinal) {
+                                finalTranscript += event.results[i][0].transcript;
+                            }
+                        }
+                        if (finalTranscript) {
+                            setInputText(prev => prev + (prev ? ' ' : '') + finalTranscript);
+                            analyzeTypingBehavior(finalTranscript, { key: 'VoiceInput' });
+                        }
+                    };
+
+                    recognitionRef.current.onerror = (event) => {
+                        console.error('Speech recognition error', event.error);
+                        setIsListening(false);
+                    };
+
+                    recognitionRef.current.onend = () => {
+                        setIsListening(false);
+                    };
+                }
+            }, []);
+
+            const toggleListening = () => {
+                if (isListening) {
+                    recognitionRef.current.stop();
+                    setIsListening(false);
+                } else {
+                    if (recognitionRef.current) {
+                        recognitionRef.current.start();
+                        setIsListening(true);
+                    } else {
+                        alert("Voice input is not supported in this browser. Please try Chrome or Edge.");
+                    }
+                }
+            };
+
+            React.useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, [messages]);
+
+            const analyzeTypingBehavior = (text, event) => {
+                const now = Date.now();
+                const timeDiff = now - lastTypingTime;
+
+                if (timeDiff > 1000) {
+                    setTypingMetrics(prev => ({ ...prev, pauses: prev.pauses + 1 }));
+                }
+
+                if (event.key === 'Backspace' || event.key === 'Delete') {
+                    setTypingMetrics(prev => ({ ...prev, backspaces: prev.backspaces + 1 }));
+                }
+
+                if (event.key.length === 1 && event.key === event.key.toUpperCase() && !event.shiftKey) {
+                    if (text.toUpperCase() === text) {
+                        setTypingMetrics(prev => ({ ...prev, capsBursts: prev.capsBursts + 1 }));
+                    }
+                }
+
+                setLastTypingTime(now);
+
+                if (typingTimerRef.current) {
+                    clearTimeout(typingTimerRef.current);
+                }
+
+                typingTimerRef.current = setTimeout(() => {
+                    const speed = text.length > 0 ? text.length / 5 : 0;
+                    const finalMetrics = { ...typingMetrics, speed };
+
+                    let mood = 'neutral';
+                    if (finalMetrics.backspaces > 5) mood = 'anxious';
+                    if (finalMetrics.pauses > 3) mood = 'overwhelmed';
+                    if (finalMetrics.capsBursts > 2) mood = 'agitated';
+                    if (finalMetrics.speed < 1.0) mood = 'fatigued';
+                    if (finalMetrics.speed > 2.0 && finalMetrics.backspaces < 2 && finalMetrics.pauses < 2) mood = 'calm';
+
+                    setTypingMetrics({ ...finalMetrics, currentMood: mood });
+
+                    const moodScores = {
+                        calm: -10,
+                        neutral: 0,
+                        anxious: 15,
+                        overwhelmed: 20,
+                        agitated: 10,
+                        fatigued: 12
+                    };
+
+                    const newScore = Math.max(0, Math.min(100, crisisScore + (moodScores[mood] || 0)));
+                    setCrisisScore(newScore);
+
+                    // Check for loneliness triggers
+                    const hour = new Date().getHours();
+                    const isLateNight = hour >= 22 || hour <= 4;
+                    if ((isLateNight && text.toLowerCase().includes('alone')) ||
+                        (text.length < 10 && text.toLowerCase().includes('tired'))) {
+                        setLonelinessMode(true);
+                    }
+
+                    // Show emergency modal if score is high
+                    if (newScore > 70) {
+                        setTimeout(() => setShowEmergencyModal(true), 1000);
+                    }
+                }, 2000);
+            };
+
+            const handleInputChange = (e) => {
+                setInputText(e.target.value);
+                analyzeTypingBehavior(e.target.value, e);
+            };
+
+            const handleSendMessage = () => {
+                if (!inputText.trim()) return;
+
+                // Add user message with typing metrics
+                const userMessage = {
+                    id: messages.length + 1,
+                    text: inputText,
+                    sender: 'user',
+                    timestamp: new Date(),
+                    typingMetrics: { ...typingMetrics }
+                };
+
+                setMessages(prev => [...prev, userMessage]);
+                setInputText('');
+                setIsTyping(true);
+
+                // Push User Message to Backend
+                const chatSessionId = localStorage.getItem('chatSessionId');
+                if (chatSessionId) {
+                    fetch('http://localhost:5000/api/chat/message', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sessionId: chatSessionId,
+                            sender: userMessage.sender,
+                            text: userMessage.text,
+                            typingMetrics: userMessage.typingMetrics,
+                            crisisScore: crisisScore
+                        })
+                    }).catch(err => console.error("Message sync error:", err));
+                }
+
+                // Reset typing metrics
+                setTypingMetrics({
+                    speed: 0,
+                    backspaces: 0,
+                    pauses: 0,
+                    capsBursts: 0,
+                    currentMood: 'neutral'
+                });
+
+                // Smart Response Engine Logic
+                setTimeout(() => {
+                    const personality = localStorage.getItem('userPersonality') || 'emotional';
+                    const lowerInput = inputText.toLowerCase();
+                    const detectedMood = typingMetrics.currentMood;
+
+                    // 1. Topic Recognition
+                    const topics = {
+                        sleep: {
+                            keywords: ['sleep', 'insomnia', 'awake', 'tired', 'night', 'bed'],
+                            measures: [
+                                "Let's try the **4-7-8 Breathing Technique**: Exhale completely, inhale nose for 4s, hold for 7s, exhale for 8s.",
+                                "A **'Brain Dump'** might help: list everything on your mind to help your brain relax.",
+                                "Consider **Progressive Muscle Relaxation**: tense your toes for 5 seconds, then release, working up your body."
+                            ]
+                        },
+                        anxiety: {
+                            keywords: ['anxious', 'panic', 'scared', 'fear', 'heart', 'breathe', 'overwhelmed'],
+                            measures: [
+                                "Let's use **5-4-3-2-1 Grounding**: Name 5 things you see, 4 you feel, 3 you hear...",
+                                "Try **Box Breathing**: Inhale for 4s, hold for 4s, exhale for 4s, hold for 4s.",
+                                "Visualize your anxiety as clouds passing in the sky—you are the blue sky behind them, always calm."
+                            ]
+                        },
+                        work: {
+                            keywords: ['work', 'job', 'boss', 'deadline', 'meeting', 'career', 'busy'],
+                            measures: [
+                                "**Try the Eisenhower Matrix**: Prioritize tasks by Urgent vs Important to reduce overwhelm.",
+                                "When overwhelmed, **Eat the Frog**: tackle the hardest thing for just 5 minutes to break the friction.",
+                                "Let's break the biggest deadline down into 3 tiny, 10-minute tasks. What's step 1?"
+                            ]
+                        },
+                        conflict: {
+                            keywords: ['fight', 'argue', 'yelling', 'mad', 'angry', 'conflict'],
+                            measures: [
+                                "Try using an **'I-Statement'**: 'I feel [emotion] when [situation] happens because [reason].'",
+                                "Take a **20-minute cool-down break** to let adrenaline leave your system.",
+                                "Try **Perspective Taking**: how would a neutral third party describe this?"
+                            ]
+                        },
+                        loneliness: {
+                            keywords: ['lonely', 'alone', 'sad', 'isolated', 'friend'],
+                            measures: [
+                                "Loneliness is a signal for connection. Could you send a low-pressure meme or text to someone?",
+                                "Treat yourself with kindness today. Do one comforting thing for yourself right now.",
+                                "Taking care of your basic needs is a form of self-love. Have you eaten or rested well today?"
+                            ]
+                        },
+                        depression: {
+                            keywords: ['depressed', 'depression', 'hopeless', 'unhappy', 'worthless', 'empty'],
+                            measures: [
+                                "Depression can feel heavy. Can we try just one tiny thing right now, like drinking a sip of water?",
+                                "Be gentle with yourself. You don't have to 'fix' everything today. Surviving is enough.",
+                                "Remember that feelings are temporary. If things feel too dark, please consider reaching out to a professional."
+                            ]
+                        },
+                        happy: {
+                            keywords: ['happy', 'excited', 'great', 'awesome', 'amazing', 'good', 'joy', 'win'],
+                            measures: [
+                                "Take a moment to fully soak in this feeling. What's one thing that contributed to this win?",
+                                "How about we celebrate this? You could treat yourself to something nice today!",
+                                "Channel this positive energy! It might be perfect for tackling a task you've been putting off, or just enjoying the glow."
+                            ]
+                        }
+                    };
+
+                    let matchedTopic = null;
+                    let measureText = "";
+
+                    for (const [key, data] of Object.entries(topics)) {
+                        if (data.keywords.some(k => lowerInput.includes(k))) {
+                            matchedTopic = key;
+                            measureText = data.measures[Math.floor(Math.random() * data.measures.length)];
+                            break;
+                        }
+                    }
+
+                    // 2. Compose the response uniquely
+                    const intros = {
+                        calm: ["Your typing seems really steady.", "I'm sensing a calm energy from you right now."],
+                        anxious: ["I can see you're typing quite fast with some corrections, which might mean you're feeling anxious.", "Take a deep breath with me. I notice your typing feels a bit urgent."],
+                        overwhelmed: ["I noticed some pauses in your typing. It's okay if things feel like a lot right now.", "You seem a bit overwhelmed based on how you're writing. I'm right here with you."],
+                        agitated: ["Your typing pattern suggests you might be feeling frustrated or agitated.", "I see the urgency in your messages. It's completely valid to feel intense emotions."],
+                        fatigued: ["Your typing speed is a bit slower than usual. It's perfectly fine to be tired.", "I'm sensing some fatigue from you. Resting is productive too."],
+                        neutral: ["Thanks for sharing that.", "I hear you.", "Let's explore that a bit more."]
+                    };
+                    
+                    const happyIntros = [
+                        "I can feel the positive energy radiating from your words!",
+                        "That sounds wonderful! Love seeing you like this.",
+                        "It's so great to hear you sounding so positive!"
+                    ];
+
+                    let introText = "";
+                    if (matchedTopic === 'happy') {
+                        introText = happyIntros[Math.floor(Math.random() * happyIntros.length)];
+                    } else {
+                        const availableIntros = intros[detectedMood] || intros.neutral;
+                        introText = availableIntros[Math.floor(Math.random() * availableIntros.length)];
+                    }
+
+                    // 3. Reflective Listening
+                    let reflectionText = "";
+                    const feelMatch = lowerInput.match(/i (?:feel|am) (\w+)/);
+                    if (feelMatch && feelMatch[1]) {
+                        reflectionText = `It sounds like you're feeling ${feelMatch[1]}. `;
+                    }
+
+                    // 4. Fallback based on personality if no topic was matched
+                    let aiResponse = "";
+                    if (measureText) {
+                        aiResponse = `${introText} ${reflectionText}If I may suggest: ${measureText}`;
+                    } else {
+                        const responses = {
+                            analytical: [
+                                "Let's pause and analyze what's on your mind logically. What facts support your current perspective?",
+                                "Based on what you've shared, it might help to break things down. What is the core issue here?"
+                            ],
+                            emotional: [
+                                "I sense strong feelings in your words. Your thoughts are completely valid.",
+                                "Thank you for trusting me with that. I care about your experience and I'm listening."
+                            ],
+                            avoidant: [
+                                "We can take this exactly as slowly as you need. Absolutely no pressure.",
+                                "It's okay to just sit with these feelings for a moment without trying to fix everything immediately."
+                            ],
+                            overthinker: [
+                                "Let's drop the judgment for a second and just look at the situation objectively. Can we focus on just one thing we can control?",
+                                "Let's ground ourselves first. Try focusing on the present moment instead of all the possibilities."
+                            ]
+                        };
+                        const fallback = responses[personality]?.[Math.floor(Math.random() * responses[personality].length)] || responses.emotional[0];
+                        aiResponse = `${introText} ${reflectionText}${fallback}`;
+                    }
+
+                    const botMessage = {
+                        id: messages.length + 2,
+                        text: aiResponse,
+                        sender: 'bot',
+                        timestamp: new Date()
+                    };
+
+                    setMessages(prev => [...prev, botMessage]);
+                    setIsTyping(false);
+
+                    // Push Bot Message to Backend
+                    if (chatSessionId) {
+                        fetch('http://localhost:5000/api/chat/message', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: chatSessionId,
+                                sender: botMessage.sender,
+                                text: botMessage.text
+                            })
+                        }).catch(err => console.error("Bot message sync error:", err));
+                    }
+
+                    // Check for micro-wins (Logic preserved)
+                    const microWinTriggers = [
+                        { trigger: 'water', response: 'Great job staying hydrated! Small self-care acts build resilience.', icon: 'droplet' },
+                        { trigger: 'break', response: 'Smart move taking a break! Rest is productive.', icon: 'pause-circle' },
+                        { trigger: 'walk', response: 'Excellent! Movement releases endorphins and clears the mind.', icon: 'footprints' },
+                        { trigger: 'completed', response: 'Achievement noted! Celebrate every completion.', icon: 'check-circle' },
+                        { trigger: 'breathe', response: 'Perfect! Conscious breathing regulates your nervous system.', icon: 'wind' }
+                    ];
+
+                    const foundWin = microWinTriggers.find(win =>
+                        lowerInput.includes(win.trigger)
+                    );
+
+                    if (foundWin) {
+                        setTimeout(() => {
+                            setMessages(prev => [...prev, {
+                                id: prev.length + 1,
+                                text: foundWin.response,
+                                sender: 'bot',
+                                timestamp: new Date(),
+                                isMicroWin: true,
+                                winIcon: foundWin.icon
+                            }]);
+                        }, 500);
+                    }
+                }, 1500);
+            };
+
+            const quickActions = [
+                { text: "I'm feeling overwhelmed with work", icon: "frown" },
+                { text: "Help me calm down quickly", icon: "wind" },
+                { text: "I'm anxious about a deadline", icon: "clock" },
+                { text: "Feeling burnt out and tired", icon: "coffee" },
+                { text: "Help me with a conflict at work", icon: "users" },
+                { text: "I'm having trouble sleeping", icon: "moon" }
+            ];
+
+            return (
+                <div className="chat-page">
+                    <header className="chat-header">
+                        <h1 className="chat-title">AI Mental Health Companion</h1>
+                        <div className="chat-indicators">
+                            <div className="mood-indicator">
+                                <div className={`mood-dot ${typingMetrics.currentMood}`}></div>
+                                <span>{typingMetrics.currentMood.charAt(0).toUpperCase() + typingMetrics.currentMood.slice(1)} Mood</span>
+                            </div>
+                            <div className="risk-meter">
+                                <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Risk Score:</span>
+                                <div className="meter-bar">
+                                    <div className="meter-fill" style={{ width: `${crisisScore}%` }}></div>
+                                </div>
+                                <span style={{ fontSize: '14px', fontWeight: '600' }}>{crisisScore}/100</span>
+                            </div>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => onNavigate('dashboard')}
+                            >
+                                ← Dashboard
+                            </button>
+                        </div>
+                    </header>
+
+                    <div className="chat-container">
+                        <aside className="chat-sidebar">
+                            <div className="sidebar-section">
+                                <h3 className="section-title">📊 Typing Analysis</h3>
+                                <div className="typing-metrics">
+                                    <div className="metric-box">
+                                        <div className="metric-value">{typingMetrics.speed.toFixed(1)}</div>
+                                        <div className="metric-label">Words/sec</div>
+                                    </div>
+                                    <div className="metric-box">
+                                        <div className="metric-value">{typingMetrics.backspaces}</div>
+                                        <div className="metric-label">Backspaces</div>
+                                    </div>
+                                    <div className="metric-box">
+                                        <div className="metric-value">{typingMetrics.pauses}</div>
+                                        <div className="metric-label">Pauses</div>
+                                    </div>
+                                    <div className="metric-box">
+                                        <div className="metric-value">{typingMetrics.capsBursts}</div>
+                                        <div className="metric-label">CAPS Bursts</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="sidebar-section">
+                                <h3 className="section-title">🚀 Quick Actions</h3>
+                                <div className="quick-actions-list">
+                                    {quickActions.map((action, index) => (
+                                        <button
+                                            key={index}
+                                            className="quick-action-btn"
+                                            onClick={() => setInputText(action.text)}
+                                        >
+                                            <span style={{ marginRight: '8px' }}><LucideIcon name={action.icon} size={16} /></span>
+                                            {action.text}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="sidebar-section">
+                                <h3 className="section-title">🔧 Tools</h3>
+                                <button
+                                    className="quick-action-btn"
+                                    onClick={() => {
+                                        const conflict = prompt("Paste the message you want to rewrite:");
+                                        if (conflict) {
+                                            const rewritten = conflict
+                                                .replace(/you never/g, "I feel unheard when")
+                                                .replace(/you always/g, "I notice that often")
+                                                .replace(/you're wrong/g, "I see it differently")
+                                                .replace(/you don't/g, "I would appreciate if");
+                                            alert(`Try saying:\n\n"${rewritten}"\n\nThis focuses on your feelings rather than blame.`);
+                                        }
+                                    }}
+                                >
+                                    <span style={{ marginRight: '8px' }}><LucideIcon name="users" size={16} /></span> Conflict Helper
+                                </button>
+                                <button
+                                    className="quick-action-btn"
+                                    onClick={() => onNavigate('analytics')}
+                                >
+                                    <span style={{ marginRight: '8px' }}><LucideIcon name="bar-chart-2" size={16} /></span> View Analytics
+                                </button>
+                                <button
+                                    className="quick-action-btn"
+                                    onClick={() => onNavigate('settings')}
+                                >
+                                    <span style={{ marginRight: '8px' }}><LucideIcon name="settings" size={16} /></span> Settings
+                                </button>
+                            </div>
+                        </aside>
+
+                        <main className="chat-main">
+                            <div className="messages-container">
+                                {messages.map((msg) => (
+                                    <div key={msg.id} className={`message ${msg.sender}`}>
+                                        <div className="message-content">
+                                            {msg.isMicroWin && msg.winIcon && (
+                                                <div style={{ marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                    <LucideIcon name={msg.winIcon} size={20} />
+                                                    <strong>Micro-Win!</strong>
+                                                </div>
+                                            )}
+                                            {msg.text}
+                                            {msg.typingMetrics && (
+                                                <div style={{
+                                                    marginTop: '8px',
+                                                    fontSize: '12px',
+                                                    opacity: 0.7,
+                                                    fontStyle: 'italic'
+                                                }}>
+                                                    Detected: {msg.typingMetrics.currentMood} mood
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="message-time">
+                                            {msg.timestamp.toLocaleTimeString([], {
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isTyping && (
+                                    <div className="typing-indicator">
+                                        <div className="typing-dot"></div>
+                                        <div className="typing-dot"></div>
+                                        <div className="typing-dot"></div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <div className="chat-input-container">
+                                <div className="chat-input-wrapper">
+                                    <textarea
+                                        className="chat-textarea"
+                                        value={inputText}
+                                        onChange={handleInputChange}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendMessage();
+                                            }
+                                        }}
+                                        placeholder={isListening ? "Listening..." : "Type here... or click the mic to speak"}
+                                        rows="3"
+                                    />
+                                    <div className="input-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <button
+                                            className="send-button"
+                                            onClick={handleSendMessage}
+                                            disabled={!inputText.trim()}
+                                            title="Send Message"
+                                        >
+                                            <LucideIcon name="send" size={20} />
+                                        </button>
+                                        <button
+                                            className={`mic-button ${isListening ? 'listening' : ''}`}
+                                            onClick={toggleListening}
+                                            title={isListening ? "Stop Listening" : "Start Voice Input"}
+                                            style={{
+                                                background: isListening ? 'var(--error)' : 'var(--surface-light)',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: '50%',
+                                                width: '40px',
+                                                height: '40px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                color: isListening ? 'white' : 'var(--text-secondary)',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                        >
+                                            <LucideIcon name={isListening ? "mic-off" : "mic"} size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: '15px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                    💡 Tip: Your typing behavior reveals emotions. Slow typing = fatigue, Many backspaces = anxiety, ALL CAPS = agitation
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+
+                    <button
+                        className="emergency-button"
+                        onClick={() => setShowEmergencyModal(true)}
+                        title="Emergency Calm"
+                    >
+                        <LucideIcon name="wind" size={24} color="white" />
+                    </button>
+
+                    {showEmergencyModal && (
+                        <EmergencyCalmModal onClose={() => setShowEmergencyModal(false)} />
+                    )}
+
+                    {lonelinessMode && (
+                        <LonelinessModeModal onClose={() => setLonelinessMode(false)} />
+                    )}
+                </div>
+            );
+        }
+
+        // ==================== EMERGENCY CALM MODAL ====================
+        function EmergencyCalmModal({ onClose }) {
+            const [breathingActive, setBreathingActive] = React.useState(false);
+            const [step, setStep] = React.useState(1);
+
+            const startBreathing = () => {
+                setBreathingActive(true);
+                setTimeout(() => {
+                    setBreathingActive(false);
+                    setStep(2);
+                }, 30000); // 30 seconds
+            };
+
+            const groundingExercises = [
+                "5 things you can see around you",
+                "4 things you can touch or feel",
+                "3 things you can hear right now",
+                "2 things you can smell or like the smell of",
+                "1 thing you can taste or would like to taste"
+            ];
+
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-icon">
+                                <LucideIcon name="wind" size={64} />
+                            </div>
+                            <h2 className="modal-title">Emergency Calm Intervention</h2>
+                            <p className="modal-text">
+                                You're safe. Let's ground ourselves together.
+                            </p>
+                        </div>
+
+                        {step === 1 && (
+                            <div className="modal-actions">
+                                <button className="btn btn-primary" onClick={startBreathing}>
+                                    Start 30-Second Breathing Exercise
+                                </button>
+                                {breathingActive && (
+                                    <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                                        <div
+                                            style={{
+                                                width: '100px',
+                                                height: '100px',
+                                                margin: '0 auto',
+                                                background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-purple))',
+                                                borderRadius: '50%',
+                                                animation: breathingActive ? 'breathe 6s infinite ease-in-out' : 'none',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: 'white',
+                                                fontSize: '24px'
+                                            }}
+                                        >
+                                            Breathe
+                                        </div>
+                                        <p style={{ marginTop: '15px', color: 'var(--text-secondary)' }}>
+                                            Breathe in... Hold... Breathe out...
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {step === 2 && (
+                            <div className="modal-actions">
+                                <h3 style={{ marginBottom: '15px' }}>Grounding Exercise (5-4-3-2-1)</h3>
+                                <div style={{ marginBottom: '20px' }}>
+                                    {groundingExercises.map((item, index) => (
+                                        <div key={index} style={{
+                                            padding: '12px',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            borderRadius: '8px',
+                                            marginBottom: '8px'
+                                        }}>
+                                            {item}
+                                        </div>
+                                    ))}
+                                </div>
+                                <button className="btn btn-primary" onClick={() => setStep(3)}>
+                                    Continue →
+                                </button>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className="modal-actions">
+                                <h3 style={{ marginBottom: '15px' }}>Emergency Contacts</h3>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <div style={{ padding: '12px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', marginBottom: '8px' }}>
+                                        <strong>National Suicide Prevention Lifeline:</strong><br />
+                                        988 (Available 24/7)
+                                    </div>
+                                    <div style={{ padding: '12px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px', marginBottom: '8px' }}>
+                                        <strong>Crisis Text Line:</strong><br />
+                                        Text HOME to 741741
+                                    </div>
+                                    <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', borderRadius: '8px' }}>
+                                        <strong>Workplace EAP:</strong><br />
+                                        Check your HR portal or employee handbook
+                                    </div>
+                                </div>
+                                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                                    You are not alone. Help is always available.
+                                </p>
+                                <button className="btn btn-secondary" onClick={onClose}>
+                                    I'm feeling better now
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== LONELINESS MODE MODAL ====================
+        function LonelinessModeModal({ onClose }) {
+            const [soundPlaying, setSoundPlaying] = React.useState(null);
+
+            const sounds = [
+                { name: 'Gentle Rain', icon: 'cloud-rain', desc: 'Soft rainfall sounds' },
+                { name: 'White Noise', icon: 'radio', desc: 'Soothing ambient noise' },
+                { name: 'Calming Tones', icon: 'music', desc: 'Healing frequencies' },
+                { name: 'Night Forest', icon: 'trees', desc: 'Peaceful nature sounds' }
+            ];
+
+            return (
+                <div className="modal-overlay" onClick={onClose}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-icon">
+                                <LucideIcon name="moon" size={64} />
+                            </div>
+                            <h2 className="modal-title">Gentle Night Companion</h2>
+                            <p className="modal-text">
+                                The night can feel long. I'm here with you in the quiet.
+                            </p>
+                        </div>
+
+                        <div className="modal-actions">
+                            <div style={{
+                                width: '100px',
+                                height: '100px',
+                                margin: '0 auto 20px',
+                                background: 'linear-gradient(135deg, var(--primary-blue), var(--accent-purple))',
+                                borderRadius: '50%',
+                                animation: 'breathe 6s infinite ease-in-out',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '32px'
+                            }}>
+                                <LucideIcon name="moon" size={32} color="white" />
+                            </div>
+
+                            <p style={{ textAlign: 'center', marginBottom: '20px', fontStyle: 'italic' }}>
+                                "You're not alone in the quiet moments. I'm here."
+                            </p>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <h4 style={{ marginBottom: '10px' }}>Gentle Sounds</h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                                    {sounds.map((sound, index) => (
+                                        <button
+                                            key={index}
+                                            className="btn btn-secondary"
+                                            onClick={() => setSoundPlaying(sound.name)}
+                                            style={{
+                                                background: soundPlaying === sound.name ? 'rgba(59,130,246,0.2)' : '',
+                                                flexDirection: 'column',
+                                                height: 'auto',
+                                                padding: '12px'
+                                            }}
+                                        >
+                                            <span style={{ marginBottom: '8px' }}><LucideIcon name={sound.icon} size={24} /></span>
+                                            <span style={{ fontSize: '12px' }}>{sound.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button className="btn btn-primary" onClick={onClose}>
+                                Return to chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== PAGE 5: ANALYTICS DASHBOARD ====================
+        function AnalyticsDashboard({ onNavigate }) {
+            const [timeframe, setTimeframe] = React.useState('week');
+
+            const moodData = {
+                week: [65, 72, 58, 80, 75, 68, 72],
+                month: [65, 70, 68, 72, 75, 73, 70, 68, 65, 70, 72, 75, 78, 80, 75, 72, 70, 68, 65, 70, 72, 75, 78, 80, 82, 85, 80, 78, 75, 72],
+                year: [65, 68, 70, 72, 75, 78, 80, 82, 85, 83, 80, 78]
+            };
+
+            const stressTriggers = [
+                { trigger: 'Work Deadlines', frequency: 24, severity: 'High' },
+                { trigger: 'Meeting Overload', frequency: 18, severity: 'Medium' },
+                { trigger: 'Team Conflicts', frequency: 12, severity: 'High' },
+                { trigger: 'Work-Life Balance', frequency: 20, severity: 'Medium' },
+                { trigger: 'Performance Pressure', frequency: 16, severity: 'High' }
+            ];
+
+            const patterns = [
+                { day: 'Monday', mood: 65, note: 'Start-of-week anxiety peak' },
+                { day: 'Wednesday', mood: 78, note: 'Mid-week productivity high' },
+                { day: 'Friday', mood: 82, note: 'Weekend anticipation boost' },
+                { day: 'Sunday', mood: 68, note: 'Sunday night anxiety common' }
+            ];
+
+            const recoveryData = [
+                { incident: 'Major deadline', recoveryTime: '2 days', coping: 'Breathing exercises' },
+                { incident: 'Team conflict', recoveryTime: '1 day', coping: 'Conflict resolution chat' },
+                { incident: 'Work overload', recoveryTime: '3 days', coping: 'Micro-wins tracking' }
+            ];
+
+            return (
+                <div className="analytics-page">
+                    <nav className="dashboard-nav">
+                        <div className="nav-brand">
+                            <div className="brand-logo"><LucideIcon name="brain-circuit" size={32} /></div>
+                            <div className="brand-name">MindWell Analytics</div>
+                        </div>
+
+                        <div className="nav-menu">
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('dashboard'); }}>
+                                <LucideIcon name="home" size={18} /> Dashboard
+                            </a>
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('chat'); }}>
+                                <LucideIcon name="message-circle" size={18} /> AI Chat
+                            </a>
+                            <a href="#" className="nav-item active" onClick={(e) => { e.preventDefault(); onNavigate('analytics'); }}>
+                                <LucideIcon name="bar-chart-2" size={18} /> Analytics
+                            </a>
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('settings'); }}>
+                                <LucideIcon name="settings" size={18} /> Settings
+                            </a>
+                        </div>
+                    </nav>
+
+                    <div className="analytics-container">
+                        <div className="analytics-header">
+                            <h1 className="analytics-title">Emotional Analytics Dashboard</h1>
+                            <p className="analytics-subtitle">
+                                Data-driven insights into your emotional patterns and progress
+                            </p>
+                        </div>
+
+                        <div className="insights-grid">
+                            <div className="insight-card">
+                                <div className="insight-icon"><LucideIcon name="trending-up" size={32} /></div>
+                                <div className="insight-value">78%</div>
+                                <div className="insight-label">Avg. Mood Score</div>
+                                <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '5px' }}>+8% from last month</div>
+                            </div>
+                            <div className="insight-card">
+                                <div className="insight-icon"><LucideIcon name="alert-triangle" size={32} /></div>
+                                <div className="insight-value">2</div>
+                                <div className="insight-label">High Risk Days</div>
+                                <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '5px' }}>-3 from last month</div>
+                            </div>
+                            <div className="insight-card">
+                                <div className="insight-icon"><LucideIcon name="target" size={32} /></div>
+                                <div className="insight-value">24</div>
+                                <div className="insight-label">Micro-Wins</div>
+                                <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '5px' }}>+12 this month</div>
+                            </div>
+                            <div className="insight-card">
+                                <div className="insight-icon"><LucideIcon name="clock" size={32} /></div>
+                                <div className="insight-value">1.5 days</div>
+                                <div className="insight-label">Avg. Recovery Time</div>
+                                <div style={{ fontSize: '12px', color: 'var(--success)', marginTop: '5px' }}>Improving</div>
+                            </div>
+                        </div>
+
+                        <div className="charts-grid">
+                            <div className="chart-card">
+                                <div className="chart-header">
+                                    <h3 className="chart-title">Mood Trend Analysis</h3>
+                                    <div className="timeframe-selector">
+                                        <button
+                                            className={`timeframe-btn ${timeframe === 'week' ? 'active' : ''}`}
+                                            onClick={() => setTimeframe('week')}
+                                        >
+                                            Week
+                                        </button>
+                                        <button
+                                            className={`timeframe-btn ${timeframe === 'month' ? 'active' : ''}`}
+                                            onClick={() => setTimeframe('month')}
+                                        >
+                                            Month
+                                        </button>
+                                        <button
+                                            className={`timeframe-btn ${timeframe === 'year' ? 'active' : ''}`}
+                                            onClick={() => setTimeframe('year')}
+                                        >
+                                            Year
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style={{ height: '200px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+                                    {/* Simplified chart visualization */}
+                                    <div style={{ display: 'flex', alignItems: 'flex-end', height: '100%', gap: '4px' }}>
+                                        {moodData[timeframe].map((value, index) => (
+                                            <div
+                                                key={index}
+                                                style={{
+                                                    flex: 1,
+                                                    height: `${value}%`,
+                                                    background: `linear-gradient(to top, var(--primary-blue), var(--accent-purple))`,
+                                                    borderRadius: '4px 4px 0 0',
+                                                    minHeight: '10px'
+                                                }}
+                                                title={`Day ${index + 1}: ${value}%`}
+                                            ></div>
+                                        ))}
+                                    </div>
+                                    <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                                        {timeframe === 'week' ? 'Last 7 days' : timeframe === 'month' ? 'Last 30 days' : 'Last 12 months'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="chart-card">
+                                <div className="chart-header">
+                                    <h3 className="chart-title">Stress Trigger Analysis</h3>
+                                </div>
+                                <div style={{ padding: '10px 0' }}>
+                                    {stressTriggers.map((trigger, index) => (
+                                        <div key={index} style={{ marginBottom: '15px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                                <span>{trigger.trigger}</span>
+                                                <span style={{ color: trigger.severity === 'High' ? 'var(--danger)' : 'var(--warning)' }}>
+                                                    {trigger.severity}
+                                                </span>
+                                            </div>
+                                            <div style={{
+                                                width: '100%',
+                                                height: '6px',
+                                                background: 'rgba(255,255,255,0.1)',
+                                                borderRadius: '3px',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <div style={{
+                                                    width: `${(trigger.frequency / 30) * 100}%`,
+                                                    height: '100%',
+                                                    background: trigger.severity === 'High' ? 'var(--danger)' : 'var(--warning)',
+                                                    borderRadius: '3px'
+                                                }}></div>
+                                            </div>
+                                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                                                {trigger.frequency} occurrences
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="patterns-grid">
+                            <div className="pattern-card">
+                                <h3 className="pattern-title">Weekly Patterns</h3>
+                                <ul className="pattern-list">
+                                    {patterns.map((pattern, index) => (
+                                        <li key={index} className="pattern-item">
+                                            <span>{pattern.day}</span>
+                                            <span style={{
+                                                color: pattern.mood > 75 ? 'var(--success)' :
+                                                    pattern.mood > 65 ? 'var(--warning)' : 'var(--danger)',
+                                                fontWeight: '600'
+                                            }}>
+                                                {pattern.mood}%
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="pattern-card">
+                                <h3 className="pattern-title">Recovery Analysis</h3>
+                                <ul className="pattern-list">
+                                    {recoveryData.map((recovery, index) => (
+                                        <li key={index} className="pattern-item">
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: '600' }}>{recovery.incident}</div>
+                                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{recovery.coping}</div>
+                                            </div>
+                                            <span style={{ color: 'var(--success)', fontWeight: '600' }}>{recovery.recoveryTime}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="pattern-card">
+                                <h3 className="pattern-title">Best Performing Days</h3>
+                                <ul className="pattern-list">
+                                    <li className="pattern-item">
+                                        <span>Friday</span>
+                                        <span style={{ color: 'var(--success)', fontWeight: '600' }}>82% avg mood</span>
+                                    </li>
+                                    <li className="pattern-item">
+                                        <span>Wednesday</span>
+                                        <span style={{ color: 'var(--success)', fontWeight: '600' }}>78% avg mood</span>
+                                    </li>
+                                    <li className="pattern-item">
+                                        <span>Tuesday</span>
+                                        <span style={{ color: 'var(--warning)', fontWeight: '600' }}>72% avg mood</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                            <button className="btn btn-primary" onClick={() => onNavigate('chat')}>
+                                <span>💬</span> Continue Chat Session
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== PAGE 6: SETTINGS & TOOLS ====================
+        function SettingsPage({ onNavigate }) {
+            const [activeTab, setActiveTab] = React.useState('safety');
+            const [traumaSafeMode, setTraumaSafeMode] = React.useState(true);
+            const [lonelinessDetection, setLonelinessDetection] = React.useState(true);
+            const [typingAnalysis, setTypingAnalysis] = React.useState(true);
+            const [crisisPrediction, setCrisisPrediction] = React.useState(true);
+            const [blockedWords, setBlockedWords] = React.useState(['suicide', 'self-harm', 'abuse']);
+            const [newWord, setNewWord] = React.useState('');
+            const [conflictText, setConflictText] = React.useState('');
+            const [rewrittenText, setRewrittenText] = React.useState('');
+
+            const handleAddWord = () => {
+                if (newWord.trim() && !blockedWords.includes(newWord.trim().toLowerCase())) {
+                    setBlockedWords([...blockedWords, newWord.trim().toLowerCase()]);
+                    setNewWord('');
+                }
+            };
+
+            const handleRemoveWord = (word) => {
+                setBlockedWords(blockedWords.filter(w => w !== word));
+            };
+
+            const handleRewrite = () => {
+                if (!conflictText.trim()) return;
+
+                const rewritten = conflictText
+                    .replace(/you never/g, "I feel unheard when")
+                    .replace(/you always/g, "I notice that often")
+                    .replace(/you're wrong/g, "I see it differently")
+                    .replace(/you don't understand/g, "I'd like to help you understand my perspective")
+                    .replace(/you're/g, "I feel when")
+                    .replace(/you/g, "I");
+
+                setRewrittenText(rewritten);
+            };
+
+            return (
+                <div className="settings-page">
+                    <nav className="dashboard-nav">
+                        <div className="nav-brand">
+                            <div className="brand-logo">🧠</div>
+                            <div className="brand-name">MindWell Settings</div>
+                        </div>
+
+                        <div className="nav-menu">
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('dashboard'); }}>
+                                <span>🏠</span> Dashboard
+                            </a>
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('chat'); }}>
+                                <span>💬</span> AI Chat
+                            </a>
+                            <a href="#" className="nav-item" onClick={(e) => { e.preventDefault(); onNavigate('analytics'); }}>
+                                <span>📊</span> Analytics
+                            </a>
+                            <a href="#" className="nav-item active" onClick={(e) => { e.preventDefault(); onNavigate('settings'); }}>
+                                <span>⚙️</span> Settings
+                            </a>
+                        </div>
+                    </nav>
+
+                    <div className="settings-container">
+                        <div className="settings-header">
+                            <h1 className="settings-title">Settings & Tools</h1>
+                            <p className="settings-subtitle">
+                                Customize your AI companion and access helpful tools
+                            </p>
+                        </div>
+
+                        <div className="settings-tabs">
+                            <button
+                                className={`settings-tab ${activeTab === 'safety' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('safety')}
+                            >
+                                🔒 Safety Settings
+                            </button>
+                            <button
+                                className={`settings-tab ${activeTab === 'features' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('features')}
+                            >
+                                ⚙️ AI Features
+                            </button>
+                            <button
+                                className={`settings-tab ${activeTab === 'tools' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('tools')}
+                            >
+                                🛠️ Communication Tools
+                            </button>
+                        </div>
+
+                        {activeTab === 'safety' && (
+                            <div className="settings-section">
+                                <div className="section-header">
+                                    <h2 className="section-title">Trauma-Safe Mode</h2>
+                                </div>
+
+                                <div className="toggle-group">
+                                    <div className="toggle-item">
+                                        <div className="toggle-info">
+                                            <h4>Trauma-Safe Content Filtering</h4>
+                                            <p>Automatically avoid potentially triggering topics and language</p>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={traumaSafeMode}
+                                                onChange={() => setTraumaSafeMode(!traumaSafeMode)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div className="toggle-item">
+                                        <div className="toggle-info">
+                                            <h4>Blocked Words & Topics</h4>
+                                            <p>Add specific words or topics you want the AI to avoid</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="word-filter">
+                                        <div className="filter-input-group">
+                                            <input
+                                                type="text"
+                                                className="input-field"
+                                                placeholder="Add a word or topic to block"
+                                                value={newWord}
+                                                onChange={(e) => setNewWord(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && handleAddWord()}
+                                            />
+                                            <button className="btn btn-primary" onClick={handleAddWord}>
+                                                Add
+                                            </button>
+                                        </div>
+
+                                        <div className="filter-list">
+                                            {blockedWords.map((word, index) => (
+                                                <div key={index} className="filter-tag">
+                                                    {word}
+                                                    <button
+                                                        className="remove-tag"
+                                                        onClick={() => handleRemoveWord(word)}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'features' && (
+                            <div className="settings-section">
+                                <div className="section-header">
+                                    <h2 className="section-title">AI Feature Controls</h2>
+                                </div>
+
+                                <div className="toggle-group">
+                                    <div className="toggle-item">
+                                        <div className="toggle-info">
+                                            <h4>Typing Behavior Analysis</h4>
+                                            <p>AI analyzes typing patterns to detect emotional states</p>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={typingAnalysis}
+                                                onChange={() => setTypingAnalysis(!typingAnalysis)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div className="toggle-item">
+                                        <div className="toggle-info">
+                                            <h4>Crisis Prediction System</h4>
+                                            <p>Proactively detect and intervene in high-risk situations</p>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={crisisPrediction}
+                                                onChange={() => setCrisisPrediction(!crisisPrediction)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </div>
+
+                                    <div className="toggle-item">
+                                        <div className="toggle-info">
+                                            <h4>Loneliness Detection</h4>
+                                            <p>Special support mode for late nights and isolation signals</p>
+                                        </div>
+                                        <label className="toggle-switch">
+                                            <input
+                                                type="checkbox"
+                                                checked={lonelinessDetection}
+                                                onChange={() => setLonelinessDetection(!lonelinessDetection)}
+                                            />
+                                            <span className="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'tools' && (
+                            <div className="settings-section">
+                                <div className="section-header">
+                                    <h2 className="section-title">Communication Assistant</h2>
+                                </div>
+
+                                <div className="conflict-helper">
+                                    <h3 style={{ marginBottom: '15px' }}>AI-Mediated Conflict Helper</h3>
+                                    <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                                        Paste a difficult message, and we'll help you rewrite it using healthy communication techniques
+                                    </p>
+
+                                    <textarea
+                                        className="conflict-input"
+                                        placeholder="Paste the message you want to rewrite here...
+Example: 'You never listen to me and always ignore my suggestions'"
+                                        value={conflictText}
+                                        onChange={(e) => setConflictText(e.target.value)}
+                                        rows="4"
+                                    />
+
+                                    <button className="btn btn-primary" onClick={handleRewrite}>
+                                        🤝 Rewrite Message
+                                    </button>
+
+                                    {rewrittenText && (
+                                        <div className="conflict-output">
+                                            <h4 style={{ marginBottom: '10px' }}>Suggested Rewrite:</h4>
+                                            <p>{rewrittenText}</p>
+                                            <div style={{ marginTop: '15px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                                                💡 This version uses "I" statements and focuses on your feelings rather than blame.
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(59,130,246,0.1)', borderRadius: '8px' }}>
+                                        <h4 style={{ marginBottom: '10px' }}>Communication Tips:</h4>
+                                        <ul style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+                                            <li>Use "I" statements instead of "you" statements</li>
+                                            <li>Focus on specific behaviors, not character judgments</li>
+                                            <li>Express your feelings and needs clearly</li>
+                                            <li>Avoid absolutes like "always" and "never"</li>
+                                            <li>Listen actively and validate the other person's perspective</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                            <button className="btn btn-primary" onClick={() => onNavigate('chat')}>
+                                <span>💬</span> Back to Chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==================== MAIN APP ====================
+        function App() {
+            const [currentPage, setCurrentPage] = React.useState('loading');
+            const [loadingComplete, setLoadingComplete] = React.useState(false);
+            const [navParams, setNavParams] = React.useState({});
+
+            React.useEffect(() => {
+                // Simulate loading
+                const timer = setTimeout(() => {
+                    setLoadingComplete(true);
+                    checkOnboarding();
+                }, 3000);
+
+                return () => clearTimeout(timer);
+            }, []);
+
+            const checkOnboarding = () => {
+                const onboardingComplete = localStorage.getItem('onboardingComplete');
+                if (onboardingComplete === 'true') {
+                    setCurrentPage('dashboard');
+                } else {
+                    setCurrentPage('onboarding');
+                }
+            };
+
+            const handleNavigate = (page, params = {}) => {
+                setCurrentPage(page);
+                setNavParams(params);
+            };
+
+            const handleOnboardingComplete = () => {
+                setCurrentPage('dashboard');
+            };
+
+            if (!loadingComplete) {
+                return <LoadingScreen />;
+            }
+
+            switch (currentPage) {
+                case 'onboarding':
+                    return <Onboarding onComplete={handleOnboardingComplete} />;
+                case 'dashboard':
+                    return <Dashboard onNavigate={handleNavigate} />;
+                case 'chat':
+                    return <ChatInterface onNavigate={handleNavigate} initialMode={navParams.activeMode} />;
+                case 'analytics':
+                    return <AnalyticsDashboard onNavigate={handleNavigate} />;
+                case 'settings':
+                    return <SettingsPage onNavigate={handleNavigate} />;
+                default:
+                    return <Dashboard onNavigate={handleNavigate} />;
+            }
+        }
+
+        // ==================== RENDER APP ====================
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        console.log(`
+        🧠 MindWell - AI Mental Health Chatbot for Working Professionals
+        ================================================================
+        
+        PROJECT DETAILS:
+        • Team: Sneha Dhole, Pranali Pawar, Sanika More, Samruddhi Patil
+        • Guide: Mr. Sandeep Pande
+        • Academic Year: 2025–26
+        • School of Computer Engineering
+        
+        FEATURES IMPLEMENTED:
+        1. ⌨️ Emotion Detection from Typing Behavior
+        2. ⚠️ Crisis Prediction Score (Early Risk Detection)
+        3. 🎭 Personality-Adaptive Therapy Style
+        4. 💾 "You Matter" Memory Engine
+        5. 🌙 Loneliness Mode (For Silent Nights)
+        6. 📊 Emotional Analytics Dashboard
+        7. 🤝 AI-Mediated Conflict Helper
+        8. 🎯 "Micro-Wins" Dopamine System
+        9. 🔒 Trauma-Safe Mode
+        10. 🧘 30-Second Emergency Calm Button
+        
+        UI STRUCTURE:
+        • Page 1: Loading Screen with Feature Showcase
+        • Page 2: Personalized Onboarding
+        • Page 3: Main Dashboard with Stats
+        • Page 4: AI Chat Interface with Real-time Analysis
+        • Page 5: Analytics Dashboard with Visual Insights
+        • Page 6: Settings & Communication Tools
+        
+        App ready! 🚀
+        `);
+  

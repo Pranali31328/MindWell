@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(uuid())
+  name             String
+  email            String         @unique
+  passwordHash     String
+  profession       String?
+  company          String?
+  personality      String         @default("analytical")
+  primaryStressors String?
+  goals            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  sessions         ChatSession[]
+  journalEntries   JournalEntry[]
+  userGoals        UserGoal[]
+  moodCheckIns     MoodCheckIn[]
+  memory           UserMemory?
+}
+
+model UserMemory {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  summary   String   @default("")
+  topics    String   @default("[]")
+  keyFacts  String   @default("[]")
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model ChatSession {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  therapyMethod String        @default("warm")
+  startTime     DateTime      @default(now())
+  endTime       DateTime?
+  messages      ChatMessage[]
+}
+
+model JournalEntry {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  text       String
+  mood       String?
+  tags       String?
+  analysis   String?
+  copingTip  String?
+  createdAt  DateTime @default(now())
+}
+
+model UserGoal {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  title       String
+  category    String    @default("wellness")
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model MoodCheckIn {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  moodIndex Int
+  moodLabel String?
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id             String         @id @default(uuid())
+  sessionId      String
+  session        ChatSession    @relation(fields: [sessionId], references: [id])
+  sender         String
+  text           String
+  timestamp      DateTime       @default(now())
+  isMicroWin     Boolean        @default(false)
+  winIcon        String?
+  emotionMetrics EmotionMetric?
+}
+
+model EmotionMetric {
+  id            String      @id @default(uuid())
+  messageId     String      @unique
+  message       ChatMessage @relation(fields: [messageId], references: [id])
+  speed         Float       @default(0)
+  backspaces    Int         @default(0)
+  pauses        Int         @default(0)
+  capsBursts    Int         @default(0)
+  currentMood   String      @default("neutral")
+  crisisScore   Int         @default(25)
+  wellnessScore Int         @default(75)
+  stressScore   Int         @default(20)
+  stressLevel   String      @default("low")
+  sentiment     String      @default("neutral")
+  compound      Float       @default(0)
+}

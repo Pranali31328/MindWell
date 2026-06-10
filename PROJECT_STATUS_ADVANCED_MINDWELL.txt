@@ -1,0 +1,219 @@
+MINDWELL — PROJECT STATUS & ADVANCED FEATURE ROADMAP (Full-Stack Revamp)
+
+Generated: 2026-05-22
+
+============================================================
+1) CURRENT PROJECT STATUS (What works right now)
+============================================================
+
+A) Tech Stack (already present)
+- Frontend: React (Vite) located in: client/
+- Backend: Node.js + Express located in: server/
+- Database: SQLite via Prisma ORM (configured by Prisma client)
+- AI Services:
+  - Python ML service (sentiment/mood/risk signals) via http://localhost:5001/analyze (with rule-based fallback if ML is offline)
+  - Gemini integration (server-side) for LLM chatbot responses
+- Libraries:
+  - Prisma (@prisma/client)
+  - dotenv (server env loading)
+  - bcryptjs (auth)
+  - lucide-react (icons)
+
+B) Core Working Flows
+1. Authentication & User Profile
+- Endpoints implemented:
+  - POST /api/auth/register
+  - POST /api/auth/login
+- Onboarding:
+  - PUT /api/users/:id/onboarding
+  - GET /api/users/:id
+- Frontend routes (SPA-style navigation): auth → onboarding → dashboard
+
+2. Chatbot (Gemini-powered + DB persistence)
+- Endpoints:
+  - POST /api/chat/session
+  - POST /api/chat/send
+  - GET /api/chat/sessions/:userId
+  - GET /api/chat/session/:sessionId
+- Chat behavior:
+  - On send:
+    1) Backend runs ML analysis on user text (sentiment, stress, crisis risk, workplace flags, loneliness flag)
+    2) Saves user message + emotion metrics into Prisma
+    3) Attempts Gemini generation (therapyMethod + user personality + recent conversation context)
+    4) Saves bot reply into Prisma
+    5) If Gemini fails, falls back to rule-based response generator (generateBotResponse)
+
+✅ FIX COMPLETED: Chatbot session fix
+- POST /api/chat/session now auto-creates a fallback user profile when userId is missing/invalid.
+- Purpose: avoids “chatbot not working” caused by cleared/empty SQLite while the browser still has local session state.
+
+✅ GEMINI INTEGRATION FIX COMPLETED
+- Backend confirms env loading at runtime:
+  - Console log: [Gemini] GEMINI_API_KEY loaded: true
+- Gemini calls are now routed through server/gemini.js and wired into /api/chat/send.
+
+3. Wellness Hub (UI features present)
+- Implemented page: WellnessHub.jsx
+- Category filtering
+- Read modal that opens when an article is clicked
+
+4. Breathing / Burnout / Focus Timer / Sanctuary / Journal (frontend prototypes)
+- These pages/components exist and provide interactive UX.
+- Journal currently includes UI for “analyze reflection” in the broader concept; backend integration for persistent journal analysis is a pending enhancement (see roadmap).
+
+C) Verified Server Connectivity (basic)
+- Backend is reachable:
+  - GET http://localhost:5000/api/analytics/1 returns analytics JSON (HTTP 200)
+
+============================================================
+2) WHAT IS INCLUDED RIGHT NOW (Feature inventory)
+============================================================
+
+Frontend (client/src)
+- Routing via internal state (App.jsx):
+  - loading, auth, onboarding, dashboard, chat, resources (WellnessHub), journal, breathing, burnout, timer, sanctuary
+
+Components currently present:
+- Auth.jsx: login/register UI
+- Onboarding.jsx: personality + professional context capture
+- Dashboard.jsx: wellness score gauge, mood distribution (from analytics), quick actions
+- ChatInterface.jsx: chat UI with sessions sidebar + offline fallback AI
+- WellnessHub.jsx: category filter + article read modal
+- BreathingExercise, BurnoutTest, FocusTimer, Sanctuary, Journal: interactive UX pages (mostly client-side)
+
+Backend (server/index.js + server/gemini.js)
+- Auth routes: register/login
+- User routes: onboarding + profile fetch
+- Chat routes: session create, send message, session history
+- ML proxy: POST /api/analyze
+- Analytics: GET /api/analytics/:userId
+- Gemini wiring:
+  - server/gemini.js: REST call to Gemini, prompt construction, therapy method mapping
+  - server/index.js: Gemini-first reply generation with fallback
+
+Database (Prisma models implied by usage)
+- User
+- ChatSession
+- ChatMessage
+- EmotionMetrics (embedded in chatMessage.create via emotionMetrics.create)
+
+============================================================
+3) WHAT WE SHOULD IMPLEMENT NEXT TO MAKE IT “ADVANCED”
+============================================================
+
+Below is the intended advanced suite based on the revamp requirements, with a prioritized order.
+
+Priority 1 — Stability + LLM correctness
+1) Replace “offline rule-based only” moments with Gemini-first everywhere
+- Ensure ChatInterface never uses offlineMode unless backend is truly unreachable.
+
+2) Therapy method selector wiring (Chat page)
+- Ensure the UI gear/selector sends therapyMethod to POST /api/chat/send.
+- Maintain the same therapyMethod across the conversation (optional: store per session).
+
+3) Add request/response logging & error surfaces
+- Add a backend correlation id per /api/chat/send
+- Show a user-facing toast when Gemini fails and fallback is used.
+
+Priority 2 — Premium UX + Themes
+1) Implement “Obsidian Nebula” & “Ethereal Aurora” theme identities
+- Current CSS already contains a dark theme + light theme.
+- Next: adjust palettes to match required spec:
+  - Obsidian Nebula: deep space black #02040a with neon gradients & glowing borders
+  - Ethereal Aurora: pearl white #fafafd + lavender gradients + pastel accents + glassmorphism
+
+2) Add micro-interactions consistently
+- Animate card hover states, modal open/close, message bubble gradients.
+- Add gradient indicators to chat bubbles.
+
+Priority 3 — Advanced Features Suite (new functional depth)
+1) Sanctuary page: Multi-mode breathing coach
+- Current breathing page exists (4-7-8) — extend to:
+  - 4-7-8
+  - Box breathing
+  - Equal breathing
+- Add timer countdown per step + step instruction animation.
+
+2) Journal: AI emotional insights with “Analyze reflection”
+- Implement backend route POST /api/analyze (already exists) and add:
+  - Store journal entry
+  - Store analysis output (sentiment/emotion breakdown/stress level)
+  - Generate “Daily Coping Tip” using Gemini (or structured rules) and display it.
+
+3) Dashboard: Work-life goal tracker & streak system
+- Replace static streak/affirmations with:
+  - Goal board with categories
+  - Completion tracker + streak persistence
+  - Micro-celebration animation on completion
+
+4) Chat: Floating AI configuration gear
+- Add a floating settings gear UI in ChatInterface.
+- Switch AI methodology in real time (CBT / Mindfulness / Warm Listener).
+
+5) Wellness Hub: Enhancements requested
+- Filtering already exists.
+- Read modal should be “beautiful” and include actionable insights.
+- Add “Save” / “Start exercise” deep links.
+
+Priority 4 — Reporting & Evaluation
+1) Analytics upgrade
+- Add charts for:
+  - stress trend
+  - mood distribution over time
+  - crisis risk history
+
+2) Export functionality
+- Export chat + journal insights to PDF/JSON.
+
+============================================================
+4) TECHNICAL STACK (Report-ready description)
+============================================================
+
+- React (Vite): Component-based SPA UI for dashboard, chatbot, journal, breathing, resources.
+- Express.js: REST API for authentication, chat session management, ML analysis proxy, analytics.
+- Prisma ORM with SQLite: Persistence layer for user accounts, chat sessions, chat messages, and emotion metrics.
+- ML microservice (Python): Provides sentiment/risk metrics for each journal/chat message via /analyze endpoint.
+- Gemini LLM (Gemini REST API): Generates therapy-method-specific assistant responses.
+- Env management via dotenv: server/.env for secrets such as GEMINI_API_KEY.
+
+============================================================
+5) RESULT ANALYSIS CONTENT (Text for your report)
+============================================================
+
+Result Analysis — MindWell Revamp (Advanced UI & Feature Suite)
+
+1) Chatbot Reliability Improvements
+A common failure mode in prototypes is session mismatch when the client stores a session but the backend database is reset. This project fixed the “chatbot not working” behavior by enhancing POST /api/chat/session to detect missing/invalid userId values and automatically create a fallback user profile in the database. As a result, older local sessions no longer break the chat experience.
+
+2) LLM Integration Using Gemini
+To make the chatbot behave like a real conversation partner (instead of rule-based responses), the backend now integrates Gemini as the primary response engine. During POST /api/chat/send, the system:
+- computes emotion and risk signals from the ML service,
+- saves the user message and associated metrics to Prisma,
+- calls Gemini with a prompt that includes the selected therapyMethod, user personality, and recent chat context.
+If Gemini encounters an error or returns empty content, the backend gracefully falls back to the pre-existing rule-based generator. This fallback ensures the application remains usable under connectivity or API issues.
+
+3) Therapy Method Adaptation (Personalized Interaction)
+The therapyMethod parameter (CBT / Mindfulness Coach / Warm Listener) modifies the prompt and response structure. This produces consistent interaction methodology aligned to the user’s preference. The chatbot therefore becomes adaptable rather than generic.
+
+4) UI/UX Modernization & Engagement
+The Wellness Hub implements category filtering and a read modal, improving content discoverability. Interactive pages (breathing, burnout assessment, focus timer, calm sanctuary, journal UI) provide immediate user engagement, supporting the platform’s goal of workplace mental well-being.
+
+5) Data Persistence & Analytics Foundation
+Chat sessions, messages, and emotion metrics are stored in SQLite via Prisma. The analytics endpoint summarizes mood distribution, average wellness, micro-wins, and crisis risk aggregates. This provides a foundation for long-term monitoring and progress tracking.
+
+============================================================
+6) CREATED/UPDATED ARTIFACTS
+============================================================
+
+- server/index.js
+  - Added Gemini env debug log
+  - Added chat session fix (fallback user creation)
+  - Added Gemini-first generation with fallback
+- server/gemini.js
+  - Implemented Gemini prompt construction and REST call
+- server/.env (contains GEMINI_API_KEY)
+
+============================================================
+END OF STATUS DOC
+============================================================
+
