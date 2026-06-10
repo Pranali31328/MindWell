@@ -1,0 +1,49 @@
+# ── Node ──────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Environment variables (NEVER commit real .env) ──
+.env
+.env.local
+.env.production
+
+# ── Build output ──────────────────────────────
+dist/
+dist-ssr/
+build/
+
+# ── SQLite databases ──────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Python virtual environment ────────────────
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── OS artifacts ──────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editor ────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# ── Prisma generated ──────────────────────────
+generated/
+
+# ── Logs ──────────────────────────────────────
+*.log
+logs/
+
+# ── Legacy monolithic files (replaced by modular structure) ──
+app.js
+app.txt
+styles.css
